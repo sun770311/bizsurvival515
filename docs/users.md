@@ -60,3 +60,12 @@ Use Case 4: User selects the type of business that are currently looking to rent
 - User: Selects all business categories
 - System: Returns a ranked list of the most successful business categories in that particular area.
 
+
+Use Case 5: Searches for a specific business category (ex: Finance, Automotive)
+Search returns a list of business that are tagged with that category
+- User: Enters a business category (Dropdowns to help ease the user’s search process)
+- System:Returns a list of business in that particular category, also suggests the business categories that are very similar to the category searched
+- User: Clicks on a particular business of his interest. 
+- System: Shows the financial insights/ numbers of that business, also displays charts showing yearly trends. A map appears showcasing other businesses that are in the vicinity of the chosen business.
+
+
