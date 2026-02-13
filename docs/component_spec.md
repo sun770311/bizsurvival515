@@ -118,20 +118,32 @@
    - `nearbyBusinesses`
    - `nearbyServiceRequests`
    - `spatialJoinResult` (business ↔ 311 neighborhood summary)
-5. **UI → AnalyticsEngine:** compute `mode="survival_score"` using selected business + features derived from `spatialJoinResult`.
-6. **AnalyticsEngine → UI:** return `scores` and `explanations` for the selected business (and optionally nearby businesses).
-7. **UI → VizManager:** build `mapPins` (selected + nearby), set tooltip/panel content, and render the updated view.
+5. **UI → VizManager:** build `mapPins` (selected + nearby), set tooltip/panel content, and render the updated view.
 
 ---
 
-### Use Case 2: User hovers over pins on spatial map to explore surrounding businesses
+### Use Case 2: User creates a hypothetical business to see survival likelihood
+1. **UI → User:** collect hypothetical inputs (`category`, `location`, optional features).
+2. **UI → GeoService:** fetch local context using `coordinates + radius` → `nearbyBusinesses`, `nearbyServiceRequests`, `spatialJoinResult`.
+3. **UI → DataManager:** retrieve baseline stats for selected `category` and area.
+4. **UI → AnalyticsEngine:** compute prediction using:
+   - `hypotheticalBusinessFeatures`
+   - `neighborhoodContext`
+   - `categoryBaselineStats`  
+   → outputs `survivalProbability`, `riskFactors`, `featureContributions`.
+5. **AnalyticsEngine → UI:** return prediction + explanation.
+6. **UI → VizManager:** render survival score, key factors, comparison, and hypothetical map pin.
+
+---
+
+### Use Case 3: User hovers over pins on spatial map to explore surrounding businesses
 1. **UI → DataManager:** use hovered `business_id` to fetch the hovered business’ summary fields (if not already cached).
 2. **UI → GeoService:** send hovered business `coordinates` + `radius` to retrieve `nearbyBusinesses` and `nearbyServiceRequests` (and optionally `spatialJoinResult`).
 3. **UI → VizManager:** render hover tooltip and highlight hovered pin; optionally show nearby businesses as a subtle layer.
 
 ---
 
-### Use Case 3: User searches for a type of business (filters)
+### Use Case 4: User searches for a type of business (filters)
 1. **UI → DataManager:** send `filters = { category, status, borough, dateRange }` (+ optional `boundingBox`) and `limit` to retrieve `businessList`.
 2. **DataManager → UI:** return filtered businesses + metadata counts.
 3. **UI → GeoService:** for the map viewport, retrieve 311 context or compute per-business neighborhood summaries:
@@ -142,7 +154,7 @@
 
 ---
 
-### Use Case 4: Property owner selects business categories and gets an ordered list by success in an area
+### Use Case 5: Property owner selects business categories and gets an ordered list by success in an area
 1. **UI → DataManager:** send `filters = { categories: [...], boundingBox OR borough/zip, dateRange }` to retrieve `businessList` in the chosen area.
 2. **UI → GeoService:** spatially join the area’s businesses to nearby 311 requests, producing `spatialJoinResult` (neighborhood signals per business).
 3. **UI → AnalyticsEngine:** compute `mode="category_rank"` using the businesses + features derived from `spatialJoinResult`.
