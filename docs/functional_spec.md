@@ -130,3 +130,15 @@ Property owner wants to determine which business types are most successful in a 
 2. System computes success metrics using historical data.  
 3. System returns a ranked list of categories based on survival and performance indicators.  
 4. User may expand to view detailed statistics or compare categories.
+
+---
+
+### Use Case 5: Searches for a specific business category (e.g., Finance, Automotive)
+**Objective:**  
+Search returns a list of business that are tagged with that category.
+
+**Interaction Flow:**
+1. User enters a business category (Dropdowns to help ease the user’s search process)
+2. System returns a list of business in that particular category, also suggests the business categories that are very similar to the category searched
+3. User clicks on a particular business of his interest. 
+4. System shows the financial insights/ numbers of that business, also displays charts showing yearly trends. A map appears showcasing other businesses that are in the vicinity of the chosen business.
