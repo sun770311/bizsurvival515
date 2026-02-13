@@ -133,12 +133,20 @@ Property owner wants to determine which business types are most successful in a 
 
 ---
 
-### Use Case 5: Searches for a specific business category (e.g., Finance, Automotive)
+### Use Case 5: Create a Hypothetical Business
 **Objective:**  
-Search returns a list of business that are tagged with that category.
+User wants to simulate a new business in a chosen location and understand its predicted survival likelihood before making real-world decisions.
 
-**Interaction Flow:**
-1. User enters a business category (Dropdowns to help ease the user’s search process)
-2. System returns a list of business in that particular category, also suggests the business categories that are very similar to the category searched
-3. User clicks on a particular business of his interest. 
-4. System shows the financial insights/ numbers of that business, also displays charts showing yearly trends. A map appears showcasing other businesses that are in the vicinity of the chosen business.
+**Interaction Flow:**  
+1. User opens the hypothetical business tool and enters inputs:
+   - Business category  
+   - Location (map click or address)  
+   - Optional attributes (size, opening time, etc.)  
+2. System retrieves neighborhood context (nearby businesses, service signals, local trends).  
+3. System computes predicted survival likelihood using the hypothetical business features and local baseline statistics.  
+4. System displays:
+   - Survival probability / score  
+   - Key risk and opportunity factors  
+   - Comparison to nearby real businesses  
+   - Map showing the hypothetical business location  
+5. User may adjust inputs to explore alternative scenarios. 
