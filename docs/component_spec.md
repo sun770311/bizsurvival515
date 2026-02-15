@@ -119,7 +119,7 @@
    - `nearbyServiceRequests`
    - `spatialJoinResult` (business ↔ 311 neighborhood summary)
 5. **UI → VizManager:** build `mapPins` (selected + nearby), set tooltip/panel content, and render the updated view.
-![Use Case 1 Interaction Diagram](1.jpg)
+![Use Case 1 Interaction Diagram](media/1.jpg)
 
 ---
 
@@ -134,7 +134,7 @@
    → outputs `survivalProbability`, `riskFactors`, `featureContributions`.
 5. **AnalyticsEngine → UI:** return prediction + explanation.
 6. **UI → VizManager:** render survival score, key factors, comparison, and hypothetical map pin.
-![Use Case 2 Interaction Diagram](2.jpg)
+![Use Case 2 Interaction Diagram](media/2.jpg)
 
 ---
 
@@ -142,7 +142,7 @@
 1. **UI → DataManager:** use hovered `business_id` to fetch the hovered business’ summary fields (if not already cached).
 2. **UI → GeoService:** send hovered business `coordinates` + `radius` to retrieve `nearbyBusinesses` and `nearbyServiceRequests` (and optionally `spatialJoinResult`).
 3. **UI → VizManager:** render hover tooltip and highlight hovered pin; optionally show nearby businesses as a subtle layer.
-![Use Case 3 Interaction Diagram](3.jpg)
+![Use Case 3 Interaction Diagram](media/3.jpg)
 
 ---
 
@@ -154,7 +154,7 @@
    - or join only for a sample/aggregation to keep it fast
 4. **UI → VizManager:** render pins + a filter summary panel; enable export.
 5. **UI → VizManager (export):** on download click, call with `exportFormat="png"` or `"pdf"` and return `exportFile`.
-![Use Case 4 Interaction Diagram](4.jpg)
+![Use Case 4 Interaction Diagram](media/4.jpg)
 
 ---
 
@@ -164,4 +164,4 @@
 3. **UI → AnalyticsEngine:** compute `mode="category_rank"` using the businesses + features derived from `spatialJoinResult`.
 4. **AnalyticsEngine → UI:** return `rankedCategories` + supporting `explanations` (e.g., why top categories do well).
 5. **UI → VizManager:** render a ranked table + optional map overlay for the chosen area.
-![Use Case 5 Interaction Diagram](5.jpg)
+![Use Case 5 Interaction Diagram](media/5.jpg)
