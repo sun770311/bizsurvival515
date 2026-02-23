@@ -30,6 +30,7 @@ dependencies:
   - defusedxml=0.7.1
   - executing=2.2.1
   - expat=2.7.4
+  - flask>=3.0.0
   - fontconfig=2.15.0
   - fonttools=4.61.0
   - freetype=2.14.1
