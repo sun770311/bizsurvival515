@@ -8,13 +8,48 @@ View map locally at:
 
 from __future__ import annotations
 
-import argparse
-import http.server
-import mimetypes
 import os
-import socketserver
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+
+import argparse
+from flask import Flask, Response, abort, send_from_directory
+
+
+def create_app(map_dir: Path, data_dir: Path, token: str) -> Flask:
+    app = Flask(__name__)
+
+    @app.route("/config.js")
+    def config_js() -> tuple[str, int, dict]:
+        body = f'window.__CONFIG__ = {{ MAPBOX_PUBLIC_TOKEN: "{token}" }};\n'
+        return body, 200, {"Content-Type": "application/javascript; charset=utf-8"}
+
+    @app.route("/data/<path:filename>")
+    def serve_data(filename: str) -> Response:
+        target = (data_dir / filename).resolve()
+        try:
+            target.relative_to(data_dir)
+        except ValueError:
+            abort(403)
+        if not target.exists() or not target.is_file():
+            abort(404)
+        return send_from_directory(data_dir, filename)
+
+    @app.route("/")
+    def index() -> Response:
+        return send_from_directory(map_dir, "index.html")
+
+    @app.route("/<path:filename>")
+    def serve_static(filename: str) -> Response:
+        target = (map_dir / filename).resolve()
+        try:
+            target.relative_to(map_dir)
+        except ValueError:
+            abort(403)
+        if not target.exists() or not target.is_file():
+            abort(404)
+        return send_from_directory(map_dir, filename)
+
+    return app
 
 
 def main() -> None:
@@ -30,77 +65,20 @@ def main() -> None:
             '   export MAPBOX_PUBLIC_TOKEN="pk.XXXX..."\n'
         )
 
-    map_dir = Path(__file__).resolve().parent   # .../map
-    data_dir = (map_dir / "../data").resolve()  # .../data
+    map_dir = Path(__file__).resolve().parent
+    data_dir = (map_dir / "../data").resolve()
 
     if not data_dir.exists() or not data_dir.is_dir():
         raise SystemExit(f"Data directory not found: {data_dir}")
 
-    class DualRootHandler(http.server.BaseHTTPRequestHandler):
-        server_version = "DualRootHTTP/0.2"
+    app = create_app(map_dir, data_dir, token)
 
-        def do_GET(self) -> None:
-            parsed = urlparse(self.path)
-            path = unquote(parsed.path)
+    print(f"Serving on http://localhost:{args.port}")
+    print(f" - site root: {map_dir}")
+    print(f" - data root: {data_dir}  (mounted at /data/)")
+    print(" - config:    /config.js")
 
-            if path == "/config.js":
-                body = f'window.__CONFIG__ = {{ MAPBOX_PUBLIC_TOKEN: "{token}" }};\n'.encode("utf-8")
-                return self._send_bytes(200, body, "application/javascript; charset=utf-8")
-
-            if path.startswith("/data/"):
-                rel = path[len("/data/") :]
-                target = (data_dir / rel).resolve()
-                if not self._is_within(target, data_dir):
-                    return self._send_text(403, "Forbidden")
-                return self._serve_file(target)
-
-            if path == "/" or path == "":
-                return self._serve_file(map_dir / "index.html")
-
-            rel = path.lstrip("/")
-            target = (map_dir / rel).resolve()
-            if not self._is_within(target, map_dir):
-                return self._send_text(403, "Forbidden")
-            return self._serve_file(target)
-
-        def _is_within(self, target: Path, root: Path) -> bool:
-            try:
-                target.relative_to(root)
-                return True
-            except ValueError:
-                return False
-
-        def _serve_file(self, fp: Path) -> None:
-            if not fp.exists() or fp.is_dir():
-                return self._send_text(404, "Not found")
-
-            ctype, _ = mimetypes.guess_type(str(fp))
-            ctype = ctype or "application/octet-stream"
-
-            data = fp.read_bytes()
-            return self._send_bytes(200, data, ctype)
-
-        def _send_text(self, code: int, text: str) -> None:
-            body = (text + "\n").encode("utf-8")
-            return self._send_bytes(code, body, "text/plain; charset=utf-8")
-
-        def _send_bytes(self, code: int, body: bytes, content_type: str) -> None:
-            self.send_response(code)
-            self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
-            self.wfile.write(body)
-
-        def log_message(self, fmt: str, *args) -> None:
-            print(f"{self.address_string()} - {fmt % args}")
-
-    with socketserver.TCPServer(("", args.port), DualRootHandler) as httpd:
-        print(f"Serving on http://localhost:{args.port}")
-        print(f" - site root: {map_dir}")
-        print(f" - data root: {data_dir}  (mounted at /data/)")
-        print(" - config:    /config.js")
-        httpd.serve_forever()
+    app.run(host="", port=args.port, debug=False)
 
 
 if __name__ == "__main__":
