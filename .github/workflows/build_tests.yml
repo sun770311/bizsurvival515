@@ -1,0 +1,53 @@
+name: Build and Tests
+
+on:
+  push:
+    branches: [ "main", "toml_file" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+    # 1. Grab your code from GitHub
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    # 2. Set up Conda using your streamlined environment.yml
+    # This will automatically read your pyproject.toml and install your package + dev tools!
+    - name: Set up Conda Environment
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: bizsurvival
+        environment-file: environment.yml
+        auto-activate-base: false
+
+    # 3. Quick check to ensure everything installed correctly
+    - name: Verify Installation
+      run: |
+        pip show bizsurvival
+        conda list
+
+    # 4. Check Code Style (Pylint)
+    - name: Run Pylint
+      run: |
+        pylint *.py tests/ || echo "Pylint failed but continuing for now to see test results"
+
+    # 5. Run the Tests and Measure Coverage
+    - name: Run Unittest & Coverage
+      run: |
+        coverage run -m unittest discover -s tests
+        coverage report -m
+
+    # 6. Upload Coverage to Coveralls
+    - name: Upload to Coveralls
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        coveralls

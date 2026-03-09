@@ -1,6 +1,9 @@
 ## Project Title
 Open or Closed? NYC Business Survival
 
+[![Build and Tests](https://github.com/sun770311/bizsurvival515/actions/workflows/build_tests.yml/badge.svg)](https://github.com/sun770311/bizsurvival515/actions/workflows/build_tests.yml)
+[![Coverage Status](https://coveralls.io/repos/github/sun770311/bizsurvival515/badge.svg?branch=main)](https://coveralls.io/github/sun770311/bizsurvival515?branch=main)
+
 ## Team Members
 Aaron Lee, Hannah Sun, Juan Pablo Reyes Martinez, Pavankumar Suresh, Sreeraj Parakkat
 

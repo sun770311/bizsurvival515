@@ -1,0 +1,8 @@
+LICENSE
+README.md
+pyproject.toml
+bizsurvival.egg-info/PKG-INFO
+bizsurvival.egg-info/SOURCES.txt
+bizsurvival.egg-info/dependency_links.txt
+bizsurvival.egg-info/requires.txt
+bizsurvival.egg-info/top_level.txt
