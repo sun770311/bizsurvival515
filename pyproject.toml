@@ -1,7 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "bizsurvival"
 version = "0.0.1"
+description = "A business survival analysis package for DATA 515"
+readme = "README.md"
+requires-python = ">=3.10"
 dependencies = [
     "requests",
-    'importlib-metadata; python_version<"3.10"',
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "streamlit"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pylint",
+    "coverage",
+    "coveralls",
+    "build"
 ]
