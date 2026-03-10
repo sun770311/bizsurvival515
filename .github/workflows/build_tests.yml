@@ -2,7 +2,7 @@ name: Build and Tests
 
 on:
   push:
-    branches: [ "main", "toml_file" ]
+    branches: [ "main", "toml_file", "mapbox"]
   pull_request:
     branches: [ "main" ]
 
