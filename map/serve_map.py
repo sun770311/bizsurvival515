@@ -1,85 +1,53 @@
-"""
-Mandatory Steps:
-  export MAPBOX_PUBLIC_TOKEN="pk.XXXX..."
-  python serve_map.py --port 8000
-View map locally at:
-  http://localhost:8000
-"""
-
-from __future__ import annotations
-
-import os
 from pathlib import Path
+from flask import Flask, send_from_directory, abort
 
-import argparse
-from flask import Flask, Response, abort, send_from_directory
+APP_DIR = Path(__file__).resolve().parent
 
+app = Flask(__name__, static_folder=str(APP_DIR), static_url_path="")
 
-def create_app(map_dir: Path, data_dir: Path, token: str) -> Flask:
-    app = Flask(__name__)
-
-    @app.route("/config.js")
-    def config_js() -> tuple[str, int, dict]:
-        body = f'window.__CONFIG__ = {{ MAPBOX_PUBLIC_TOKEN: "{token}" }};\n'
-        return body, 200, {"Content-Type": "application/javascript; charset=utf-8"}
-
-    @app.route("/data/<path:filename>")
-    def serve_data(filename: str) -> Response:
-        target = (data_dir / filename).resolve()
-        try:
-            target.relative_to(data_dir)
-        except ValueError:
-            abort(403)
-        if not target.exists() or not target.is_file():
-            abort(404)
-        return send_from_directory(data_dir, filename)
-
-    @app.route("/")
-    def index() -> Response:
-        return send_from_directory(map_dir, "index.html")
-
-    @app.route("/<path:filename>")
-    def serve_static(filename: str) -> Response:
-        target = (map_dir / filename).resolve()
-        try:
-            target.relative_to(map_dir)
-        except ValueError:
-            abort(403)
-        if not target.exists() or not target.is_file():
-            abort(404)
-        return send_from_directory(map_dir, filename)
-
-    return app
+REQUIRED_FILES = ["index.html", "app.js", "businesses.geojson"]
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
-    args = parser.parse_args()
+def ensure_file_exists(filename: str) -> None:
+    file_path = APP_DIR / filename
+    if not file_path.exists():
+        abort(404, description=f"Required file not found: {filename}")
 
-    token = os.getenv("MAPBOX_PUBLIC_TOKEN")
-    if not token:
-        raise SystemExit(
-            "Missing MAPBOX_PUBLIC_TOKEN env var.\n"
-            "Set it like:\n"
-            '   export MAPBOX_PUBLIC_TOKEN="pk.XXXX..."\n'
-        )
 
-    map_dir = Path(__file__).resolve().parent
-    data_dir = (map_dir / "../data").resolve()
+@app.route("/")
+def index():
+    ensure_file_exists("index.html")
+    return send_from_directory(APP_DIR, "index.html")
 
-    if not data_dir.exists() or not data_dir.is_dir():
-        raise SystemExit(f"Data directory not found: {data_dir}")
 
-    app = create_app(map_dir, data_dir, token)
+@app.route("/app.js")
+def app_js():
+    ensure_file_exists("app.js")
+    return send_from_directory(APP_DIR, "app.js", mimetype="application/javascript")
 
-    print(f"Serving on http://localhost:{args.port}")
-    print(f" - site root: {map_dir}")
-    print(f" - data root: {data_dir}  (mounted at /data/)")
-    print(" - config:    /config.js")
 
-    app.run(host="", port=args.port, debug=False)
+@app.route("/businesses.geojson")
+def geojson():
+    ensure_file_exists("businesses.geojson")
+    return send_from_directory(APP_DIR, "businesses.geojson", mimetype="application/geo+json")
+
+
+@app.route("/<path:filename>")
+def static_files(filename):
+    file_path = APP_DIR / filename
+    if file_path.exists() and file_path.is_file():
+        return send_from_directory(APP_DIR, filename)
+    abort(404, description=f"File not found: {filename}")
 
 
 if __name__ == "__main__":
-    main()
+    missing = [f for f in REQUIRED_FILES if not (APP_DIR / f).exists()]
+    if missing:
+        print("Missing required files:")
+        for f in missing:
+            print(f" - {f}")
+    else:
+        print("Serving files from:", APP_DIR)
+        print("Open: http://127.0.0.1:8000")
+
+    app.run(host="127.0.0.1", port=8000, debug=True)

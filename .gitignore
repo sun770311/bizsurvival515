@@ -1,4 +1,11 @@
-.DS_Store
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
 .ipynb_checkpoints/
-data/
-model/
+.DS_Store
+.coverage
+coverage.xml
+htmlcov/
