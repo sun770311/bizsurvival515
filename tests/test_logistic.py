@@ -6,9 +6,10 @@ import unittest
 
 import pandas as pd
 
+from pipeline.utils import load_joined_dataset, FeatureSelectionResult
 from pipeline.logistic import (
-    FeatureSelectionResult,
     LogisticConfig,
+    ModelingParams,
     balance_dataset,
     build_business_survival_summary,
     build_coefficient_summary,
@@ -17,14 +18,12 @@ from pipeline.logistic import (
     filter_eligible_businesses,
     fit_logistic_model,
     get_excluded_feature_columns,
-    load_joined_dataset,
     prepare_training_data,
     restrict_to_study_window,
     run_logistic_pipeline,
     select_nonconstant_features,
     split_features_and_target,
     train_test_split_balanced,
-    validate_joined_dataset,
 )
 
 
@@ -33,25 +32,6 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 class TestLogistic(unittest.TestCase):
     """Test suite for the logistic regression pipeline functions."""
-
-    def test_load_joined_dataset_parses_month_column(self):
-        """Test that loading the joined dataset correctly parses the month column."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        self.assertIn("month", joined.columns)
-        self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
-
-    def test_validate_joined_dataset_accepts_valid_data(self):
-        """Test that validation succeeds on a valid dataset."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        validate_joined_dataset(joined)
-
-    def test_validate_joined_dataset_rejects_duplicate_rows(self):
-        """Test that validation fails when duplicate business-month rows exist."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        duplicated = pd.concat([joined, joined.iloc[[0]]], ignore_index=True)
-
-        with self.assertRaisesRegex(ValueError, "Duplicate business_id-month rows"):
-            validate_joined_dataset(duplicated)
 
     def test_restrict_to_study_window_filters_future_rows(self):
         """Test that restricting to the study window filters out future rows."""
@@ -175,29 +155,31 @@ class TestLogistic(unittest.TestCase):
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=Path("unused"),
+            params=ModelingParams(),
         )
 
         prepared = prepare_training_data(config)
 
         self.assertFalse(prepared.training_df.empty)
-        self.assertFalse(prepared.X.empty)
-        self.assertGreater(len(prepared.X_train), 0)
-        self.assertGreater(len(prepared.X_test), 0)
-        self.assertTrue(set(prepared.y.unique()).issubset({0, 1}))
+        self.assertFalse(prepared.x_df.empty)
+        self.assertGreater(len(prepared.split.x_train), 0)
+        self.assertGreater(len(prepared.split.x_test), 0)
+        self.assertTrue(set(prepared.y_series.unique()).issubset({0, 1}))
 
     def test_fit_logistic_model_returns_pipeline(self):
         """Test that fitting the logistic model returns a configured pipeline."""
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=Path("unused"),
+            params=ModelingParams(),
         )
         prepared = prepare_training_data(config)
 
         pipeline = fit_logistic_model(
-            X_train=prepared.X_train,
-            y_train=prepared.y_train,
-            max_iter=config.max_iter,
-            random_state=config.random_state,
+            x_train=prepared.split.x_train,
+            y_train=prepared.split.y_train,
+            max_iter=config.params.max_iter,
+            random_state=config.params.random_state,
         )
 
         self.assertIn("model", pipeline.named_steps)
@@ -207,19 +189,20 @@ class TestLogistic(unittest.TestCase):
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=Path("unused"),
+            params=ModelingParams(),
         )
         prepared = prepare_training_data(config)
         pipeline = fit_logistic_model(
-            X_train=prepared.X_train,
-            y_train=prepared.y_train,
-            max_iter=config.max_iter,
-            random_state=config.random_state,
+            x_train=prepared.split.x_train,
+            y_train=prepared.split.y_train,
+            max_iter=config.params.max_iter,
+            random_state=config.params.random_state,
         )
 
         metrics = evaluate_model(
             pipeline=pipeline,
-            X_test=prepared.X_test,
-            y_test=prepared.y_test,
+            x_test=prepared.split.x_test,
+            y_test=prepared.split.y_test,
         )
 
         self.assertIn("accuracy", metrics)
@@ -235,21 +218,22 @@ class TestLogistic(unittest.TestCase):
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=Path("unused"),
+            params=ModelingParams(),
         )
         prepared = prepare_training_data(config)
         pipeline = fit_logistic_model(
-            X_train=prepared.X_train,
-            y_train=prepared.y_train,
-            max_iter=config.max_iter,
-            random_state=config.random_state,
+            x_train=prepared.split.x_train,
+            y_train=prepared.split.y_train,
+            max_iter=config.params.max_iter,
+            random_state=config.params.random_state,
         )
 
         coef_df = build_coefficient_summary(
             pipeline=pipeline,
-            feature_columns=prepared.X_train.columns.tolist(),
+            feature_columns=prepared.split.x_train.columns.tolist(),
         )
 
-        self.assertEqual(len(coef_df), prepared.X_train.shape[1])
+        self.assertEqual(len(coef_df), prepared.split.x_train.shape[1])
         self.assertIn("feature", coef_df.columns)
         self.assertIn("coefficient", coef_df.columns)
 
@@ -261,6 +245,7 @@ class TestLogistic(unittest.TestCase):
             config = LogisticConfig(
                 data_path=TEST_DATA_DIR / "joined_dataset.csv",
                 output_dir=tmp_path,
+                params=ModelingParams(),
             )
 
             summary = run_logistic_pipeline(config)

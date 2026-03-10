@@ -15,7 +15,7 @@ from pipeline.inspect_logistic import (
     load_artifacts,
     predict_profiles,
 )
-from pipeline.logistic import LogisticConfig, run_logistic_pipeline
+from pipeline.logistic import LogisticConfig, ModelingParams, run_logistic_pipeline
 
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
@@ -24,35 +24,33 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 class TestInspectLogistic(unittest.TestCase):
     """Test suite for inspecting logistic regression models with hypothetical profiles."""
 
-    def create_logistic_artifacts_dir(self) -> Path:
+    def create_logistic_artifacts_dir(self, tmp_path: Path) -> None:
         """Create a temporary directory and generate logistic model artifacts for testing."""
-        tmpdir = tempfile.TemporaryDirectory()
-        self.addCleanup(tmpdir.cleanup)
-        tmp_path = Path(tmpdir.name)
-
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=tmp_path,
+            params=ModelingParams(),
         )
         run_logistic_pipeline(config)
-        return tmp_path
 
     def test_load_artifacts(self):
         """Test that logistic model artifacts are successfully loaded from disk."""
-        artifacts_dir = self.create_logistic_artifacts_dir()
-        config = InspectConfig(artifacts_dir=artifacts_dir)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            self.create_logistic_artifacts_dir(tmp_path)
+            config = InspectConfig(artifacts_dir=tmp_path)
 
-        pipeline, kept_columns, metrics, coef_summary = load_artifacts(config)
+            pipeline, kept_columns, metrics, coef_summary = load_artifacts(config)
 
-        self.assertIsNotNone(pipeline)
-        self.assertIsInstance(kept_columns, list)
-        self.assertGreater(len(kept_columns), 0)
-        self.assertIsInstance(metrics, dict)
-        self.assertIn("accuracy", metrics)
-        self.assertIsInstance(coef_summary, pd.DataFrame)
-        self.assertFalse(coef_summary.empty)
-        self.assertIn("feature", coef_summary.columns)
-        self.assertIn("coefficient", coef_summary.columns)
+            self.assertIsNotNone(pipeline)
+            self.assertIsInstance(kept_columns, list)
+            self.assertGreater(len(kept_columns), 0)
+            self.assertIsInstance(metrics, dict)
+            self.assertIn("accuracy", metrics)
+            self.assertIsInstance(coef_summary, pd.DataFrame)
+            self.assertFalse(coef_summary.empty)
+            self.assertIn("feature", coef_summary.columns)
+            self.assertIn("coefficient", coef_summary.columns)
 
     def test_build_baseline_profile(self):
         """Test that a baseline profile of zeros is correctly built for kept columns."""
@@ -110,25 +108,27 @@ class TestInspectLogistic(unittest.TestCase):
 
     def test_predict_profiles_returns_valid_output(self):
         """Test that profile prediction returns a dataframe with valid probabilities."""
-        artifacts_dir = self.create_logistic_artifacts_dir()
-        config = InspectConfig(artifacts_dir=artifacts_dir)
-        pipeline, kept_columns, _metrics, _coef_summary = load_artifacts(config)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            self.create_logistic_artifacts_dir(tmp_path)
+            config = InspectConfig(artifacts_dir=tmp_path)
+            pipeline, kept_columns, _metrics, _coef_summary = load_artifacts(config)
 
-        profiles = build_hypothetical_profiles(kept_columns)
-        results = predict_profiles(pipeline, profiles)
+            profiles = build_hypothetical_profiles(kept_columns)
+            results = predict_profiles(pipeline, profiles)
 
-        self.assertFalse(results.empty)
-        self.assertEqual(
-            set(results.columns),
-            {
-                "profile",
-                "predicted_survival_probability",
-                "predicted_class",
-            },
-        )
-        self.assertEqual(results["profile"].nunique(), len(profiles.index))
-        self.assertTrue(results["predicted_survival_probability"].between(0, 1).all())
-        self.assertTrue(set(results["predicted_class"].unique()).issubset({0, 1}))
+            self.assertFalse(results.empty)
+            self.assertEqual(
+                set(results.columns),
+                {
+                    "profile",
+                    "predicted_survival_probability",
+                    "predicted_class",
+                },
+            )
+            self.assertEqual(results["profile"].nunique(), len(profiles.index))
+            self.assertTrue(results["predicted_survival_probability"].between(0, 1).all())
+            self.assertTrue(set(results["predicted_class"].unique()).issubset({0, 1}))
 
     def test_get_coefficient_direction_positive(self):
         """Test that positive coefficients return 'above_baseline'."""
@@ -226,18 +226,20 @@ class TestInspectLogistic(unittest.TestCase):
 
     def test_check_hypothetical_expectations_with_real_artifacts(self):
         """Test checking expectations using real artifacts generated from the pipeline."""
-        artifacts_dir = self.create_logistic_artifacts_dir()
-        config = InspectConfig(artifacts_dir=artifacts_dir)
-        pipeline, kept_columns, _metrics, coef_summary = load_artifacts(config)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            self.create_logistic_artifacts_dir(tmp_path)
+            config = InspectConfig(artifacts_dir=tmp_path)
+            pipeline, kept_columns, _metrics, coef_summary = load_artifacts(config)
 
-        profiles = build_hypothetical_profiles(kept_columns)
-        results = predict_profiles(pipeline, profiles)
-        expectation_results = check_hypothetical_expectations(results, coef_summary)
+            profiles = build_hypothetical_profiles(kept_columns)
+            results = predict_profiles(pipeline, profiles)
+            expectation_results = check_hypothetical_expectations(results, coef_summary)
 
-        self.assertFalse(expectation_results.empty)
-        self.assertIn("matches_expectation", expectation_results.columns)
-        self.assertEqual(expectation_results["matches_expectation"].dtype, bool)
-        self.assertEqual(len(expectation_results), 7)
+            self.assertFalse(expectation_results.empty)
+            self.assertIn("matches_expectation", expectation_results.columns)
+            self.assertEqual(expectation_results["matches_expectation"].dtype, bool)
+            self.assertEqual(len(expectation_results), 7)
 
 
 if __name__ == "__main__":

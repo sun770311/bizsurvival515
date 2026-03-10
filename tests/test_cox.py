@@ -8,22 +8,19 @@ import pandas as pd
 from lifelines import CoxPHFitter
 from sklearn.preprocessing import StandardScaler
 
+from pipeline.utils import load_joined_dataset, FeatureSelectionResult
 from pipeline.cox import (
     CoxConfig,
-    FeatureSelectionResult,
     build_business_level_dataset,
     build_coefficient_summary,
     build_time_varying_panel,
     fit_standard_cox_model,
     get_feature_columns,
-    get_model_drop_columns,
-    load_joined_dataset,
     prepare_business_level_model_data,
     prepare_time_varying_model_data,
     run_standard_cox_pipeline,
     scale_features,
     select_nonconstant_features,
-    validate_joined_dataset,
 )
 
 
@@ -32,32 +29,6 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 class TestCox(unittest.TestCase):
     """Test suite for Cox survival modeling pipeline functions."""
-
-    def test_load_joined_dataset_parses_month_column(self):
-        """Test that loading the joined dataset parses the month column as datetime."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        self.assertIn("month", joined.columns)
-        self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
-
-    def test_validate_joined_dataset_accepts_valid_data(self):
-        """Test that a valid dataset passes validation without errors."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        validate_joined_dataset(joined)
-
-    def test_validate_joined_dataset_rejects_duplicate_rows(self):
-        """Test that validation fails when duplicate business_id-month rows exist."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        duplicated = pd.concat([joined, joined.iloc[[0]]], ignore_index=True)
-
-        with self.assertRaisesRegex(ValueError, "Duplicate business_id-month rows"):
-            validate_joined_dataset(duplicated)
-
-    def test_get_model_drop_columns_contains_expected_columns(self):
-        """Test that the drop columns list contains expected leakage columns."""
-        dropped = get_model_drop_columns()
-        self.assertIn("open", dropped)
-        self.assertIn("business_category_sum", dropped)
-        self.assertIn("total_311", dropped)
 
     def test_build_time_varying_panel_has_required_columns(self):
         """Test that the time-varying panel includes start, stop, and event columns."""

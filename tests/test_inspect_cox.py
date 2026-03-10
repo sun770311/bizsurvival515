@@ -7,13 +7,13 @@ import unittest
 import pandas as pd
 
 from pipeline.cox import CoxConfig, run_standard_cox_pipeline
+from pipeline.utils import load_joined_dataset
 from pipeline.inspect_cox import (
     build_baseline_profile,
     check_directional_expectations,
     compare_profile_to_baseline,
     get_feature_direction,
     load_artifacts,
-    load_joined_dataset,
     make_hypothetical_profiles,
     score_profiles,
     validate_feature_availability,
@@ -27,38 +27,29 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 class TestInspectCox(unittest.TestCase):
     """Test suite for inspecting Cox models using hypothetical business profiles."""
 
-    def create_cox_standard_artifacts_dir(self) -> Path:
+    def create_cox_standard_artifacts_dir(self, tmp_path: Path) -> None:
         """Create a temporary directory and generate standard Cox artifacts for testing."""
-        tmpdir = tempfile.TemporaryDirectory()
-        self.addCleanup(tmpdir.cleanup)
-        tmp_path = Path(tmpdir.name)
-
         config = CoxConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=tmp_path,
         )
         run_standard_cox_pipeline(config)
-        return tmp_path
 
     def test_load_artifacts(self):
         """Test that Cox model artifacts are successfully loaded from disk."""
-        artifact_dir = self.create_cox_standard_artifacts_dir()
-        artifacts = load_artifacts(artifact_dir)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            self.create_cox_standard_artifacts_dir(tmp_path)
+            artifacts = load_artifacts(tmp_path)
 
-        self.assertIn("model", artifacts)
-        self.assertIn("scaler", artifacts)
-        self.assertIn("kept_columns", artifacts)
-        self.assertIn("coef_summary", artifacts)
-        self.assertIsInstance(artifacts["kept_columns"], list)
-        self.assertGreater(len(artifacts["kept_columns"]), 0)
-        self.assertIsInstance(artifacts["coef_summary"], pd.DataFrame)
-        self.assertFalse(artifacts["coef_summary"].empty)
-
-    def test_load_joined_dataset_parses_month(self):
-        """Test that loading the joined dataset correctly parses the month column."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        self.assertIn("month", joined.columns)
-        self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
+            self.assertIn("model", artifacts)
+            self.assertIn("scaler", artifacts)
+            self.assertIn("kept_columns", artifacts)
+            self.assertIn("coef_summary", artifacts)
+            self.assertIsInstance(artifacts["kept_columns"], list)
+            self.assertGreater(len(artifacts["kept_columns"]), 0)
+            self.assertIsInstance(artifacts["coef_summary"], pd.DataFrame)
+            self.assertFalse(artifacts["coef_summary"].empty)
 
     def test_build_baseline_profile_matches_kept_columns(self):
         """Test that the generated baseline profile matches the model's kept columns."""
@@ -117,16 +108,9 @@ class TestInspectCox(unittest.TestCase):
 
     def test_validate_feature_availability_raises_for_missing_features(self):
         """Test that validation raises a ValueError when required features are missing."""
-        kept_columns = ["active_license_count", "business_category_electronics_store"]
-
+        kept_columns = ["active_license_count"]
         with self.assertRaisesRegex(ValueError, "Required hypothetical-test features missing"):
-            validate_feature_availability(
-                kept_columns=kept_columns,
-                required_features=[
-                    "business_category_electronics_store",
-                    "business_category_electronic_cigarette_dealer",
-                ],
-            )
+            validate_feature_availability(kept_columns, ["business_category_electronics_store"])
 
     def test_get_feature_direction_positive(self):
         """Test that getting the feature direction returns 1 for positive coefficients."""
@@ -182,31 +166,33 @@ class TestInspectCox(unittest.TestCase):
 
     def test_score_profiles_returns_expected_columns(self):
         """Test that scoring profiles returns a dataframe with the expected columns."""
-        artifact_dir = self.create_cox_standard_artifacts_dir()
-        artifacts = load_artifacts(artifact_dir)
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            self.create_cox_standard_artifacts_dir(tmp_path)
+            artifacts = load_artifacts(tmp_path)
+            joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
 
-        kept_columns = artifacts["kept_columns"]
-        baseline = build_baseline_profile(joined, kept_columns)
-        profiles = make_hypothetical_profiles(
-            baseline_profile=baseline,
-            active_license_override=5,
-        )
+            kept_columns = artifacts["kept_columns"]
+            baseline = build_baseline_profile(joined, kept_columns)
+            profiles = make_hypothetical_profiles(
+                baseline_profile=baseline,
+                active_license_override=5,
+            )
 
-        results, survival_df = score_profiles(
-            profiles=profiles,
-            model=artifacts["model"],
-            scaler=artifacts["scaler"],
-            kept_columns=kept_columns,
-            survival_times=[12, 24, 36],
-        )
+            results, survival_df = score_profiles(
+                profiles=profiles,
+                model=artifacts["model"],
+                scaler=artifacts["scaler"],
+                kept_columns=kept_columns,
+                survival_times=[12, 24, 36],
+            )
 
-        self.assertFalse(results.empty)
-        self.assertIn("partial_hazard", results.columns)
-        self.assertIn("survival_prob_12m", results.columns)
-        self.assertIn("survival_prob_24m", results.columns)
-        self.assertIn("survival_prob_36m", results.columns)
-        self.assertFalse(survival_df.empty)
+            self.assertFalse(results.empty)
+            self.assertIn("partial_hazard", results.columns)
+            self.assertIn("survival_prob_12m", results.columns)
+            self.assertIn("survival_prob_24m", results.columns)
+            self.assertIn("survival_prob_36m", results.columns)
+            self.assertFalse(survival_df.empty)
 
     def test_check_directional_expectations_returns_expected_columns(self):
         """Test that checking directional expectations returns expected results structure."""
