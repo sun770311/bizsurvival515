@@ -9,3 +9,4 @@ build/
 .coverage
 coverage.xml
 htmlcov/
+app/.streamlit/secrets.toml
