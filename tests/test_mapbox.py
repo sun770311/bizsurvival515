@@ -14,7 +14,6 @@ from pipeline.mapbox import (
     build_business_summary,
     build_feature,
     build_full_address,
-    build_geojson_features,
     clean_joined_business_ids,
     clean_license_fields,
     filter_valid_boroughs,
