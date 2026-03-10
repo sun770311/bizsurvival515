@@ -6,6 +6,4 @@ dependencies:
   - python>=3.10
   - pip
   - pip:
-    # This tells conda to look at your pyproject.toml and install 
-    # everything listed there, including the 'dev' tools!
     - -e .[dev]

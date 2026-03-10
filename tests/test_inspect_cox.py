@@ -1,3 +1,5 @@
+"""Tests for the inspect_cox module."""
+
 from pathlib import Path
 import tempfile
 import unittest
@@ -23,7 +25,10 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 class TestInspectCox(unittest.TestCase):
+    """Test suite for inspecting Cox models using hypothetical business profiles."""
+
     def create_cox_standard_artifacts_dir(self) -> Path:
+        """Create a temporary directory and generate standard Cox artifacts for testing."""
         tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(tmpdir.cleanup)
         tmp_path = Path(tmpdir.name)
@@ -36,6 +41,7 @@ class TestInspectCox(unittest.TestCase):
         return tmp_path
 
     def test_load_artifacts(self):
+        """Test that Cox model artifacts are successfully loaded from disk."""
         artifact_dir = self.create_cox_standard_artifacts_dir()
         artifacts = load_artifacts(artifact_dir)
 
@@ -49,11 +55,13 @@ class TestInspectCox(unittest.TestCase):
         self.assertFalse(artifacts["coef_summary"].empty)
 
     def test_load_joined_dataset_parses_month(self):
+        """Test that loading the joined dataset correctly parses the month column."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         self.assertIn("month", joined.columns)
         self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
 
     def test_build_baseline_profile_matches_kept_columns(self):
+        """Test that the generated baseline profile matches the model's kept columns."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         kept_columns = ["active_license_count", "business_category_electronics_store"]
 
@@ -63,6 +71,7 @@ class TestInspectCox(unittest.TestCase):
         self.assertEqual(baseline.columns.tolist(), kept_columns)
 
     def test_zero_out_category_columns_ignores_sum_column(self):
+        """Test that zeroing out category columns ignores the category sum column."""
         profile = pd.DataFrame(
             {
                 "business_category_electronics_store": [1.0],
@@ -80,6 +89,7 @@ class TestInspectCox(unittest.TestCase):
         self.assertEqual(updated.loc[0, "active_license_count"], 3.0)
 
     def test_make_hypothetical_profiles_has_expected_index(self):
+        """Test that generating hypothetical profiles produces the expected indices."""
         baseline_profile = pd.DataFrame(
             {
                 "active_license_count": [1.0],
@@ -106,6 +116,7 @@ class TestInspectCox(unittest.TestCase):
         )
 
     def test_validate_feature_availability_raises_for_missing_features(self):
+        """Test that validation raises a ValueError when required features are missing."""
         kept_columns = ["active_license_count", "business_category_electronics_store"]
 
         with self.assertRaisesRegex(ValueError, "Required hypothetical-test features missing"):
@@ -118,6 +129,7 @@ class TestInspectCox(unittest.TestCase):
             )
 
     def test_get_feature_direction_positive(self):
+        """Test that getting the feature direction returns 1 for positive coefficients."""
         coef_summary = pd.DataFrame(
             {
                 "feature": ["x1"],
@@ -127,6 +139,7 @@ class TestInspectCox(unittest.TestCase):
         self.assertEqual(get_feature_direction(coef_summary, "x1"), 1)
 
     def test_get_feature_direction_negative(self):
+        """Test that getting the feature direction returns -1 for negative coefficients."""
         coef_summary = pd.DataFrame(
             {
                 "feature": ["x1"],
@@ -136,6 +149,7 @@ class TestInspectCox(unittest.TestCase):
         self.assertEqual(get_feature_direction(coef_summary, "x1"), -1)
 
     def test_get_feature_direction_zero(self):
+        """Test that getting the feature direction returns 0 for zero coefficients."""
         coef_summary = pd.DataFrame(
             {
                 "feature": ["x1"],
@@ -145,6 +159,7 @@ class TestInspectCox(unittest.TestCase):
         self.assertEqual(get_feature_direction(coef_summary, "x1"), 0)
 
     def test_get_feature_direction_missing(self):
+        """Test that getting the feature direction returns None for missing features."""
         coef_summary = pd.DataFrame(
             {
                 "feature": ["x1"],
@@ -154,6 +169,7 @@ class TestInspectCox(unittest.TestCase):
         self.assertIsNone(get_feature_direction(coef_summary, "missing"))
 
     def test_compare_profile_to_baseline(self):
+        """Test comparing a given profile's hazard to the baseline hazard."""
         results = pd.DataFrame(
             {
                 "partial_hazard": [1.0, 2.0, 0.5],
@@ -165,6 +181,7 @@ class TestInspectCox(unittest.TestCase):
         self.assertEqual(compare_profile_to_baseline(results, "safer"), "lower_risk")
 
     def test_score_profiles_returns_expected_columns(self):
+        """Test that scoring profiles returns a dataframe with the expected columns."""
         artifact_dir = self.create_cox_standard_artifacts_dir()
         artifacts = load_artifacts(artifact_dir)
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
@@ -192,6 +209,7 @@ class TestInspectCox(unittest.TestCase):
         self.assertFalse(survival_df.empty)
 
     def test_check_directional_expectations_returns_expected_columns(self):
+        """Test that checking directional expectations returns expected results structure."""
         results = pd.DataFrame(
             {
                 "partial_hazard": [1.0, 2.0, 2.5, 0.5, 0.4],

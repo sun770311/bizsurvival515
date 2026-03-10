@@ -1,3 +1,5 @@
+"""Tests for the logistic regression survival modeling pipeline module."""
+
 from pathlib import Path
 import tempfile
 import unittest
@@ -30,16 +32,21 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 class TestLogistic(unittest.TestCase):
+    """Test suite for the logistic regression pipeline functions."""
+
     def test_load_joined_dataset_parses_month_column(self):
+        """Test that loading the joined dataset correctly parses the month column."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         self.assertIn("month", joined.columns)
         self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
 
     def test_validate_joined_dataset_accepts_valid_data(self):
+        """Test that validation succeeds on a valid dataset."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         validate_joined_dataset(joined)
 
     def test_validate_joined_dataset_rejects_duplicate_rows(self):
+        """Test that validation fails when duplicate business-month rows exist."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         duplicated = pd.concat([joined, joined.iloc[[0]]], ignore_index=True)
 
@@ -47,11 +54,13 @@ class TestLogistic(unittest.TestCase):
             validate_joined_dataset(duplicated)
 
     def test_restrict_to_study_window_filters_future_rows(self):
+        """Test that restricting to the study window filters out future rows."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         restricted = restrict_to_study_window(joined, pd.Timestamp("2026-03-01"))
         self.assertTrue((restricted["month"] <= pd.Timestamp("2026-03-01")).all())
 
     def test_build_business_survival_summary_has_target_column(self):
+        """Test that the survival summary includes the target and duration columns."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         restricted = restrict_to_study_window(joined, pd.Timestamp("2026-03-01"))
         summary = build_business_survival_summary(restricted, survival_months=36)
@@ -62,6 +71,7 @@ class TestLogistic(unittest.TestCase):
         self.assertTrue(set(summary["survived_36m"].unique()).issubset({0, 1}))
 
     def test_filter_eligible_businesses_respects_cutoff(self):
+        """Test that businesses without enough follow-up time are filtered out."""
         business_survival = pd.DataFrame(
             {
                 "business_id": ["A", "B"],
@@ -81,6 +91,7 @@ class TestLogistic(unittest.TestCase):
         self.assertEqual(eligible["business_id"].tolist(), ["A"])
 
     def test_build_training_dataset_returns_target(self):
+        """Test that building the training dataset incorporates the survival target."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         restricted = restrict_to_study_window(joined, pd.Timestamp("2026-03-01"))
 
@@ -94,12 +105,14 @@ class TestLogistic(unittest.TestCase):
         self.assertIn("survived_36m", training_df.columns)
 
     def test_get_excluded_feature_columns_contains_leakage_columns(self):
+        """Test that the excluded feature columns contain target leakage variables."""
         excluded = get_excluded_feature_columns()
         self.assertIn("survived_36m", excluded)
         self.assertIn("duration_months", excluded)
         self.assertIn("open", excluded)
 
     def test_split_features_and_target_returns_valid_shapes(self):
+        """Test that splitting features and targets returns valid dataframe shapes."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         restricted = restrict_to_study_window(joined, pd.Timestamp("2026-03-01"))
         training_df = build_training_dataset(
@@ -108,19 +121,20 @@ class TestLogistic(unittest.TestCase):
             survival_months=36,
         )
 
-        X, y = split_features_and_target(training_df)
-        self.assertEqual(len(X), len(y))
-        self.assertNotIn("survived_36m", X.columns)
+        x_df, y_series = split_features_and_target(training_df)
+        self.assertEqual(len(x_df), len(y_series))
+        self.assertNotIn("survived_36m", x_df.columns)
 
     def test_select_nonconstant_features_drops_constant_columns(self):
-        X = pd.DataFrame(
+        """Test that near-constant features are appropriately dropped."""
+        x_df = pd.DataFrame(
             {
                 "signal": [0, 1, 0, 1],
                 "constant": [5, 5, 5, 5],
             }
         )
 
-        reduced, selection = select_nonconstant_features(X, variance_threshold=1e-8)
+        reduced, selection = select_nonconstant_features(x_df, variance_threshold=1e-8)
 
         self.assertIn("signal", reduced.columns)
         self.assertNotIn("constant", reduced.columns)
@@ -128,15 +142,17 @@ class TestLogistic(unittest.TestCase):
         self.assertIn("constant", selection.dropped_columns)
 
     def test_balance_dataset_balances_classes(self):
-        X = pd.DataFrame({"x1": [1, 2, 3, 4, 5, 6]})
-        y = pd.Series([1, 1, 1, 1, 0, 0])
+        """Test that balancing the dataset results in an equal class distribution."""
+        x_df = pd.DataFrame({"x1": [1, 2, 3, 4, 5, 6]})
+        y_series = pd.Series([1, 1, 1, 1, 0, 0])
 
-        balanced = balance_dataset(X, y, random_state=42)
+        balanced = balance_dataset(x_df, y_series, random_state=42)
         counts = balanced["survived_36m"].value_counts()
 
         self.assertEqual(counts.nunique(), 1)
 
     def test_train_test_split_balanced_preserves_target_column_split(self):
+        """Test that train/test split preserves target columns and total row counts."""
         balanced_df = pd.DataFrame(
             {
                 "x1": range(10),
@@ -145,16 +161,17 @@ class TestLogistic(unittest.TestCase):
             }
         )
 
-        X_train, X_test, y_train, y_test = train_test_split_balanced(
+        x_train, x_test, y_train, y_test = train_test_split_balanced(
             balanced_df=balanced_df,
             test_size=0.2,
             random_state=42,
         )
 
-        self.assertEqual(len(X_train) + len(X_test), len(balanced_df))
+        self.assertEqual(len(x_train) + len(x_test), len(balanced_df))
         self.assertEqual(len(y_train) + len(y_test), len(balanced_df))
 
     def test_prepare_training_data_returns_expected_parts(self):
+        """Test that preparing training data returns all expected structured components."""
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=Path("unused"),
@@ -169,6 +186,7 @@ class TestLogistic(unittest.TestCase):
         self.assertTrue(set(prepared.y.unique()).issubset({0, 1}))
 
     def test_fit_logistic_model_returns_pipeline(self):
+        """Test that fitting the logistic model returns a configured pipeline."""
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=Path("unused"),
@@ -185,6 +203,7 @@ class TestLogistic(unittest.TestCase):
         self.assertIn("model", pipeline.named_steps)
 
     def test_evaluate_model_returns_core_metrics(self):
+        """Test that evaluating the model computes and returns core performance metrics."""
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=Path("unused"),
@@ -212,6 +231,7 @@ class TestLogistic(unittest.TestCase):
         self.assertLessEqual(metrics["roc_auc"], 1.0)
 
     def test_build_coefficient_summary_matches_feature_count(self):
+        """Test that the coefficient summary aligns with the input features."""
         config = LogisticConfig(
             data_path=TEST_DATA_DIR / "joined_dataset.csv",
             output_dir=Path("unused"),
@@ -234,6 +254,7 @@ class TestLogistic(unittest.TestCase):
         self.assertIn("coefficient", coef_df.columns)
 
     def test_run_logistic_pipeline_writes_artifacts(self):
+        """Test that running the logistic pipeline writes out all expected artifacts."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
 

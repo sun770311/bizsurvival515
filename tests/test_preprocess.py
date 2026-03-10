@@ -1,3 +1,5 @@
+"""Tests for the preprocessing pipeline module."""
+
 from pathlib import Path
 import tempfile
 import unittest
@@ -20,28 +22,35 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 class TestPreprocess(unittest.TestCase):
+    """Test suite for the preprocessing pipeline functions."""
+
     def test_sanitize_feature_name_basic(self):
+        """Test that sanitize_feature_name formats basic strings correctly."""
         self.assertEqual(
             sanitize_feature_name("Home Improvement Contractor", "business_category"),
             "business_category_home_improvement_contractor",
         )
 
     def test_sanitize_feature_name_symbols(self):
+        """Test that sanitize_feature_name replaces special characters appropriately."""
         self.assertEqual(
             sanitize_feature_name("Heat & Hot Water", "complaint_type"),
             "complaint_type_heat_and_hot_water",
         )
 
     def test_make_unique_column_names(self):
+        """Test that make_unique_column_names appends numerical suffixes to duplicates."""
         names = ["a", "a", "b", "a"]
         self.assertEqual(make_unique_column_names(names), ["a", "a_1", "b", "a_2"])
 
     def test_month_range_inclusive(self):
+        """Test that month_range returns an inclusive sequence of month-start dates."""
         result = month_range(pd.Timestamp("2025-01-01"), pd.Timestamp("2025-03-01"))
         expected = pd.to_datetime(["2025-01-01", "2025-02-01", "2025-03-01"])
         pd.testing.assert_index_equal(result, expected)
 
     def test_clean_licenses_parses_dates_and_filters_invalid_rows(self):
+        """Test that clean_licenses parses dates and filters out incomplete records."""
         raw = pd.DataFrame(
             {
                 "License Number": ["1", "2"],
@@ -61,6 +70,7 @@ class TestPreprocess(unittest.TestCase):
         self.assertEqual(cleaned.iloc[0]["Business Unique ID"], "B1")
 
     def test_clean_service_requests_parses_dates_and_filters_invalid_rows(self):
+        """Test that clean_service_requests drops records with bad dates or values."""
         raw = pd.DataFrame(
             {
                 "Unique Key": ["100", "101"],
@@ -77,6 +87,7 @@ class TestPreprocess(unittest.TestCase):
         self.assertEqual(cleaned.iloc[0]["month"], pd.Timestamp("2025-01-01"))
 
     def test_build_joined_dataset_from_sample_data(self):
+        """Test the end-to-end dataset builder against a sample subset of data."""
         config = PipelineConfig(
             licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
             service_reqs_path=TEST_DATA_DIR / "service_reqs_sample.csv",
@@ -101,6 +112,7 @@ class TestPreprocess(unittest.TestCase):
         self.assertIn(joined["location_cluster"].dtype.kind, {"i", "u"})
 
     def test_business_category_sum_matches_category_columns(self):
+        """Test that the category sum column aligns with individual category flags."""
         config = PipelineConfig(
             licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
             service_reqs_path=TEST_DATA_DIR / "service_reqs_sample.csv",
@@ -123,6 +135,7 @@ class TestPreprocess(unittest.TestCase):
             )
 
     def test_complaint_sum_matches_complaint_columns(self):
+        """Test that the complaint sum column aligns with individual complaint flags."""
         config = PipelineConfig(
             licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
             service_reqs_path=TEST_DATA_DIR / "service_reqs_sample.csv",
@@ -145,6 +158,7 @@ class TestPreprocess(unittest.TestCase):
             )
 
     def test_run_pipeline_writes_output(self):
+        """Test that the full pipeline writes the resulting dataset to disk."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "joined_dataset.csv"
 
