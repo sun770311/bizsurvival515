@@ -197,14 +197,14 @@ class TestInspectCox(unittest.TestCase):
     def test_check_directional_expectations_returns_expected_columns(self):
         """Test that checking directional expectations returns expected results structure."""
         res_dict = {
-            "baseline": 1.0, 
-            "electronics_store": 2.0, 
+            "baseline": 1.0,
+            "electronics_store": 2.0,
             "electronic_cigarette_dealer": 2.5,
-            "bingo_game_operator": 0.5, 
+            "bingo_game_operator": 0.5,
             "multi_license_business": 0.4
         }
         results = pd.DataFrame(
-            {"partial_hazard": list(res_dict.values())}, 
+            {"partial_hazard": list(res_dict.values())},
             index=list(res_dict.keys())
         )
 
@@ -219,9 +219,9 @@ class TestInspectCox(unittest.TestCase):
         checks = check_directional_expectations(results, coef_summary)
 
         self.assertFalse(checks.empty)
-        
+
         expected_cols = {
-            "profile", "feature", "expected_relation", 
+            "profile", "feature", "expected_relation",
             "actual_relation", "matches_expectation"
         }
         self.assertEqual(set(checks.columns), expected_cols)

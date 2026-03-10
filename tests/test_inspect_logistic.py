@@ -176,15 +176,15 @@ class TestInspectLogistic(unittest.TestCase):
     def test_check_hypothetical_expectations_returns_expected_columns(self):
         """Test that hypothetical expectations checking returns the expected structure."""
         profiles = [
-            "baseline", "electronics_store", "vape_shop", "bingo_operator", 
+            "baseline", "electronics_store", "vape_shop", "bingo_operator",
             "many_licenses", "laundries", "car_wash", "debt_collection"
         ]
         probs = [0.50, 0.60, 0.40, 0.55, 0.70, 0.45, 0.52, 0.48]
         classes = [1, 1, 0, 1, 1, 0, 1, 0]
-        
+
         results = pd.DataFrame({
-            "profile": profiles, 
-            "predicted_survival_probability": probs, 
+            "profile": profiles,
+            "predicted_survival_probability": probs,
             "predicted_class": classes
         })
 
@@ -202,9 +202,9 @@ class TestInspectLogistic(unittest.TestCase):
         expectation_results = check_hypothetical_expectations(results, coef_summary)
 
         self.assertFalse(expectation_results.empty)
-        
+
         expected_cols = {
-            "profile", "feature", "expected_vs_baseline", 
+            "profile", "feature", "expected_vs_baseline",
             "actual_vs_baseline", "matches_expectation"
         }
         self.assertEqual(set(expectation_results.columns), expected_cols)

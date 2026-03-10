@@ -14,6 +14,7 @@ from pipeline.mapbox import (
     build_business_summary,
     build_feature,
     build_full_address,
+    build_geojson_features,
     clean_joined_business_ids,
     clean_license_fields,
     filter_valid_boroughs,
@@ -220,7 +221,7 @@ class TestMapbox(unittest.TestCase):
 
             expected_summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
             expected_subset = expected_summary[["business_id", "active", "last_month"]]
-            
+
             merged = features_df.merge(
                 expected_subset, on="business_id", how="left", suffixes=("_geojson", "_expected")
             )
@@ -251,7 +252,7 @@ class TestMapbox(unittest.TestCase):
 
             expected_summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
             expected_subset = expected_summary[["business_id", "complaint_sum"]]
-            
+
             merged = features_df.merge(
                 expected_subset, on="business_id", how="left", suffixes=("_geojson", "_expected")
             )
