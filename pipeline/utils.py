@@ -33,6 +33,16 @@ class FeatureSelectionResult:
     dropped_columns: list[str]
 
 
+@dataclass(frozen=True)
+class ModelingParams:
+    """Hyperparameters for standard modeling."""
+    survival_months: int = 36
+    variance_threshold: float = 1e-8
+    test_size: float = 0.2
+    random_state: int = 42
+    max_iter: int = 5000
+
+
 def load_joined_dataset(data_path: Path) -> pd.DataFrame:
     """Load joined dataset and parse date columns."""
     joined = pd.read_csv(data_path)
@@ -59,12 +69,37 @@ def validate_joined_dataset(joined: pd.DataFrame, required_columns: list[str]) -
             raise ValueError("Duplicate business_id-month rows found in joined dataset.")
 
 
+def get_model_req_columns() -> list[str]:
+    """Return specific columns required for all survival models."""
+    return [
+        "business_id", "month", "active_license_count", "total_311", "open",
+        "months_since_first_license", "location_cluster", "location_cluster_lat",
+        "location_cluster_lng", "business_latitude", "business_longitude",
+        "business_category_sum", "complaint_sum",
+    ]
+
+
 def get_model_drop_columns() -> list[str]:
     """Return columns excluded from model fitting."""
     return [
         "business_id", "month", "open", "months_since_first_license",
         "business_category_sum", "complaint_sum", "total_311",
     ]
+
+
+def calculate_duration_months(df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate the survival duration in months for each business."""
+    first = df.groupby("business_id")["month"].min()
+    last = df.groupby("business_id")["month"].max()
+    duration = ((last.dt.year - first.dt.year) * 12 + (last.dt.month - first.dt.month))
+    return pd.DataFrame(
+        {"business_id": first.index, "first_month": first, "last_month": last, "duration_months": duration}
+    ).reset_index(drop=True)
+
+
+def extract_baseline_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Extract the first observed month for each business as baseline features."""
+    return df.sort_values(["business_id", "month"]).groupby("business_id").first().reset_index()
 
 
 def save_pickle_artifact(obj: object, output_path: Path) -> Path:
@@ -96,3 +131,14 @@ def add_standard_modeling_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--output-dir", type=Path, required=True, help="Output directory")
     parser.add_argument("--study-end", type=str, default=str(STUDY_END.date()))
     parser.add_argument("--variance-threshold", type=float, default=VARIANCE_THRESHOLD)
+
+
+def extract_modeling_params(args: argparse.Namespace) -> ModelingParams:
+    """Extract standard modeling parameters from CLI args."""
+    return ModelingParams(
+        survival_months=getattr(args, "survival_months", 36),
+        variance_threshold=getattr(args, "variance_threshold", 1e-8),
+        test_size=getattr(args, "test_size", 0.2),
+        random_state=getattr(args, "random_state", 42),
+        max_iter=getattr(args, "max_iter", 5000),
+    )

@@ -25,26 +25,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 
 from pipeline.utils import (
-    STUDY_END, VARIANCE_THRESHOLD, FeatureSelectionResult,
+    STUDY_END, FeatureSelectionResult, ModelingParams,
     load_joined_dataset, validate_joined_dataset, get_model_drop_columns,
+    get_model_req_columns, extract_baseline_features, calculate_duration_months,
     save_pickle_artifact, save_dataframe_artifact, save_json_artifact,
-    add_standard_modeling_args
+    add_standard_modeling_args, extract_modeling_params
 )
-
-SURVIVAL_MONTHS = 36
-TEST_SIZE = 0.2
-RANDOM_STATE = 42
-MAX_ITER = 5000
-
-
-@dataclass(frozen=True)
-class ModelingParams:
-    """Hyperparameters for logistic modeling."""
-    survival_months: int = SURVIVAL_MONTHS
-    variance_threshold: float = VARIANCE_THRESHOLD
-    test_size: float = TEST_SIZE
-    random_state: int = RANDOM_STATE
-    max_iter: int = MAX_ITER
 
 
 @dataclass(frozen=True)
@@ -76,17 +62,6 @@ class PreparedTrainingData:
     feature_selection: FeatureSelectionResult
 
 
-def validate_logistic_dataset(joined: pd.DataFrame) -> None:
-    """Validate specific column requirements for logistic pipeline."""
-    reqs = [
-        "business_id", "month", "active_license_count", "total_311", "open",
-        "months_since_first_license", "location_cluster", "location_cluster_lat",
-        "location_cluster_lng", "business_latitude", "business_longitude",
-        "business_category_sum", "complaint_sum",
-    ]
-    validate_joined_dataset(joined, reqs)
-
-
 def restrict_to_study_window(
     joined: pd.DataFrame,
     study_end: pd.Timestamp,
@@ -101,23 +76,8 @@ def build_business_survival_summary(
     df: pd.DataFrame,
     survival_months: int,
 ) -> pd.DataFrame:
-    """Build business-level survival summary and 36-month target."""
-    first_month = df.groupby("business_id")["month"].min()
-    last_month = df.groupby("business_id")["month"].max()
-
-    duration_months = (
-        (last_month.dt.year - first_month.dt.year) * 12
-        + (last_month.dt.month - first_month.dt.month)
-    )
-
-    business_survival = pd.DataFrame(
-        {
-            "business_id": first_month.index,
-            "first_month": first_month,
-            "last_month": last_month,
-            "duration_months": duration_months,
-        }
-    ).reset_index(drop=True)
+    """Build business-level survival summary and target."""
+    business_survival = calculate_duration_months(df)
 
     business_survival["survived_36m"] = (
         business_survival["duration_months"] >= survival_months
@@ -131,23 +91,12 @@ def filter_eligible_businesses(
     study_end: pd.Timestamp,
     survival_months: int,
 ) -> pd.DataFrame:
-    """Keep businesses with enough follow-up window to evaluate 36-month survival."""
+    """Keep businesses with enough follow-up window to evaluate survival."""
     eligibility_cutoff = study_end - pd.DateOffset(months=survival_months)
     eligible = business_survival.loc[
         business_survival["first_month"] <= eligibility_cutoff
     ].copy()
     return eligible
-
-
-def extract_baseline_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Use the first observed month for each business as baseline features."""
-    business_features = (
-        df.sort_values(["business_id", "month"])
-        .groupby("business_id")
-        .first()
-        .reset_index()
-    )
-    return business_features
 
 
 def build_training_dataset(
@@ -281,7 +230,7 @@ def train_test_split_balanced(
 def prepare_training_data(config: LogisticConfig) -> PreparedTrainingData:
     """Prepare business-level training data for logistic regression."""
     joined = load_joined_dataset(config.data_path)
-    validate_logistic_dataset(joined)
+    validate_joined_dataset(joined, get_model_req_columns())
     df = restrict_to_study_window(joined, config.study_end)
 
     training_df = build_training_dataset(
@@ -421,14 +370,31 @@ def save_model_artifacts(
     x_test_out["survived_36m"] = prepared_data.split.y_test.values
 
     return {
-        "model_pipeline": save_pickle_artifact(pipeline, output_dir / "logistic_pipeline.pkl"),
-        "kept_columns": save_pickle_artifact(prepared_data.feature_selection.kept_columns, output_dir / "logistic_kept_columns.pkl"),
-        "dropped_columns": save_pickle_artifact(prepared_data.feature_selection.dropped_columns, output_dir / "logistic_dropped_columns.pkl"),
-        "coefficient_summary": save_dataframe_artifact(coefficient_summary, output_dir / "logistic_coefficient_summary.csv"),
-        "balanced_dataset": save_dataframe_artifact(prepared_data.balanced_df, output_dir / "business_survival_balanced_dataset.csv"),
-        "train_split": save_dataframe_artifact(x_train_out, output_dir / "X_train_balanced_split.csv"),
-        "test_split": save_dataframe_artifact(x_test_out, output_dir / "X_test_balanced_split.csv"),
-        "evaluation_metrics": save_json_artifact(metrics, output_dir / "logistic_evaluation_metrics.json"),
+        "model_pipeline": save_pickle_artifact(
+            pipeline, output_dir / "logistic_pipeline.pkl"
+        ),
+        "kept_columns": save_pickle_artifact(
+            prepared_data.feature_selection.kept_columns, output_dir / "logistic_kept_columns.pkl"
+        ),
+        "dropped_columns": save_pickle_artifact(
+            prepared_data.feature_selection.dropped_columns, 
+            output_dir / "logistic_dropped_columns.pkl"
+        ),
+        "coefficient_summary": save_dataframe_artifact(
+            coefficient_summary, output_dir / "logistic_coefficient_summary.csv"
+        ),
+        "balanced_dataset": save_dataframe_artifact(
+            prepared_data.balanced_df, output_dir / "business_survival_balanced_dataset.csv"
+        ),
+        "train_split": save_dataframe_artifact(
+            x_train_out, output_dir / "X_train_balanced_split.csv"
+        ),
+        "test_split": save_dataframe_artifact(
+            x_test_out, output_dir / "X_test_balanced_split.csv"
+        ),
+        "evaluation_metrics": save_json_artifact(
+            metrics, output_dir / "logistic_evaluation_metrics.json"
+        ),
     }
 
 
@@ -474,20 +440,13 @@ def parse_args() -> LogisticConfig:
     """Parse CLI arguments into a LogisticConfig."""
     parser = argparse.ArgumentParser(description="Train logistic model for business survival.")
     add_standard_modeling_args(parser)
-    parser.add_argument("--survival-months", type=int, default=SURVIVAL_MONTHS)
-    parser.add_argument("--test-size", type=float, default=TEST_SIZE)
-    parser.add_argument("--random-state", type=int, default=RANDOM_STATE)
-    parser.add_argument("--max-iter", type=int, default=MAX_ITER)
+    parser.add_argument("--survival-months", type=int, default=36)
+    parser.add_argument("--test-size", type=float, default=0.2)
+    parser.add_argument("--random-state", type=int, default=42)
+    parser.add_argument("--max-iter", type=int, default=5000)
 
     args = parser.parse_args()
-
-    params = ModelingParams(
-        survival_months=args.survival_months,
-        variance_threshold=args.variance_threshold,
-        test_size=args.test_size,
-        random_state=args.random_state,
-        max_iter=args.max_iter,
-    )
+    params = extract_modeling_params(args)
 
     return LogisticConfig(
         data_path=args.data,

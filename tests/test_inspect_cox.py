@@ -197,43 +197,18 @@ class TestInspectCox(unittest.TestCase):
     def test_check_directional_expectations_returns_expected_columns(self):
         """Test that checking directional expectations returns expected results structure."""
         results = pd.DataFrame(
-            {
-                "partial_hazard": [1.0, 2.0, 2.5, 0.5, 0.4],
-            },
-            index=[
-                "baseline",
-                "electronics_store",
-                "electronic_cigarette_dealer",
-                "bingo_game_operator",
-                "multi_license_business",
-            ],
+            {"partial_hazard": [1.0, 2.0, 2.5, 0.5, 0.4]},
+            index=["baseline", "electronics_store", "electronic_cigarette_dealer", "bingo_game_operator", "multi_license_business"],
         )
 
         coef_summary = pd.DataFrame(
-            {
-                "feature": [
-                    "business_category_electronics_store",
-                    "business_category_electronic_cigarette_dealer",
-                    "business_category_bingo_game_operator",
-                    "active_license_count",
-                ],
-                "coef": [1.0, 1.0, -1.0, -1.0],
-            }
+            {"feature": ["business_category_electronics_store", "business_category_electronic_cigarette_dealer", "business_category_bingo_game_operator", "active_license_count"], "coef": [1.0, 1.0, -1.0, -1.0]}
         )
 
         checks = check_directional_expectations(results, coef_summary)
 
         self.assertFalse(checks.empty)
-        self.assertEqual(
-            set(checks.columns),
-            {
-                "profile",
-                "feature",
-                "expected_relation",
-                "actual_relation",
-                "matches_expectation",
-            },
-        )
+        self.assertEqual(set(checks.columns), {"profile", "feature", "expected_relation", "actual_relation", "matches_expectation"})
         self.assertEqual(len(checks), 4)
         self.assertTrue(bool(checks["matches_expectation"].all()))
 

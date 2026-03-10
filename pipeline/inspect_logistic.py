@@ -25,7 +25,8 @@ def load_artifacts(
     with (config.artifacts_dir / "logistic_kept_columns.pkl").open("rb") as file_obj:
         kept_columns = pickle.load(file_obj)
 
-    with (config.artifacts_dir / "logistic_evaluation_metrics.json").open("r", encoding="utf-8") as file_obj:
+    metrics_path = config.artifacts_dir / "logistic_evaluation_metrics.json"
+    with metrics_path.open("r", encoding="utf-8") as file_obj:
         metrics = json.load(file_obj)
 
     coef_summary = pd.read_csv(config.artifacts_dir / "logistic_coefficient_summary.csv")
@@ -45,29 +46,29 @@ def build_hypothetical_profiles(kept_columns: list[str]) -> pd.DataFrame:
 
     profiles = {"baseline": baseline.copy()}
 
-    def _create_category_profile(name: str, category_col: str) -> pd.DataFrame:
+    def _create_category_profile(category_col: str) -> pd.DataFrame:
         prof = baseline.copy()
         if category_col in prof.columns:
             prof[category_col] = 1
         return prof
 
     profiles["electronics_store"] = _create_category_profile(
-        "electronics_store", "business_category_electronics_store"
+        "business_category_electronics_store"
     )
     profiles["vape_shop"] = _create_category_profile(
-        "vape_shop", "business_category_electronic_cigarette_dealer"
+        "business_category_electronic_cigarette_dealer"
     )
     profiles["bingo_operator"] = _create_category_profile(
-        "bingo_operator", "business_category_bingo_game_operator"
+        "business_category_bingo_game_operator"
     )
     profiles["laundries"] = _create_category_profile(
-        "laundries", "business_category_laundries"
+        "business_category_laundries"
     )
     profiles["car_wash"] = _create_category_profile(
-        "car_wash", "business_category_car_wash"
+        "business_category_car_wash"
     )
     profiles["debt_collection"] = _create_category_profile(
-        "debt_collection", "business_category_debt_collection_agency"
+        "business_category_debt_collection_agency"
     )
 
     many_licenses = baseline.copy()

@@ -8,8 +8,6 @@ import pandas as pd
 from lifelines import CoxPHFitter
 from sklearn.preprocessing import StandardScaler
 
-from pipeline.utils import load_joined_dataset
-
 
 @dataclass(frozen=True)
 class InspectCoxConfig:
@@ -74,20 +72,18 @@ def make_hypothetical_profiles(
     """Generate various business profiles to inspect model behavior."""
     profiles = {"baseline": baseline_profile.copy()}
 
-    def _create_category_profile(name: str, category_col: str) -> pd.DataFrame:
+    def _create_category_profile(category_col: str) -> pd.DataFrame:
         prof = zero_out_category_columns(baseline_profile)
         if category_col in prof.columns:
             prof[category_col] = 1.0
         return prof
 
-    profiles["electronics_store"] = _create_category_profile(
-        "electronics_store", "business_category_electronics_store"
-    )
+    profiles["electronics_store"] = _create_category_profile("business_category_electronics_store")
     profiles["electronic_cigarette_dealer"] = _create_category_profile(
-        "electronic_cigarette_dealer", "business_category_electronic_cigarette_dealer"
+        "business_category_electronic_cigarette_dealer"
     )
     profiles["bingo_game_operator"] = _create_category_profile(
-        "bingo_game_operator", "business_category_bingo_game_operator"
+        "business_category_bingo_game_operator"
     )
 
     multi_license = baseline_profile.copy()

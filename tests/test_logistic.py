@@ -6,10 +6,9 @@ import unittest
 
 import pandas as pd
 
-from pipeline.utils import load_joined_dataset, FeatureSelectionResult
+from pipeline.utils import load_joined_dataset, FeatureSelectionResult, ModelingParams
 from pipeline.logistic import (
     LogisticConfig,
-    ModelingParams,
     balance_dataset,
     build_business_survival_summary,
     build_coefficient_summary,
@@ -17,7 +16,6 @@ from pipeline.logistic import (
     evaluate_model,
     filter_eligible_businesses,
     fit_logistic_model,
-    get_excluded_feature_columns,
     prepare_training_data,
     restrict_to_study_window,
     run_logistic_pipeline,
@@ -83,13 +81,6 @@ class TestLogistic(unittest.TestCase):
 
         self.assertFalse(training_df.empty)
         self.assertIn("survived_36m", training_df.columns)
-
-    def test_get_excluded_feature_columns_contains_leakage_columns(self):
-        """Test that the excluded feature columns contain target leakage variables."""
-        excluded = get_excluded_feature_columns()
-        self.assertIn("survived_36m", excluded)
-        self.assertIn("duration_months", excluded)
-        self.assertIn("open", excluded)
 
     def test_split_features_and_target_returns_valid_shapes(self):
         """Test that splitting features and targets returns valid dataframe shapes."""

@@ -7,9 +7,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from pipeline.utils import ModelingParams, extract_modeling_params
 from pipeline.preprocess import PipelineConfig
 from pipeline.preprocess import run_pipeline as run_preprocess_pipeline
-from pipeline.logistic import LogisticConfig, ModelingParams, run_logistic_pipeline
+from pipeline.logistic import LogisticConfig, run_logistic_pipeline
 from pipeline.cox import CoxConfig
 from pipeline.cox import run_full_pipeline as run_cox_full_pipeline
 from pipeline.mapbox import GeoJSONConfig, run_geojson_pipeline
@@ -17,9 +18,7 @@ from pipeline.mapbox import GeoJSONConfig, run_geojson_pipeline
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments for the pipeline configuration."""
-    parser = argparse.ArgumentParser(
-        description="Run the full pipeline: preprocess, logistic, cox, geojson."
-    )
+    parser = argparse.ArgumentParser(description="Run the full pipeline.")
     parser.add_argument("--data-dir", type=Path, default=Path("tests/data"))
     parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
     parser.add_argument("--licenses-file", type=str, default="licenses_sample.csv")
@@ -36,6 +35,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-iter", type=int, default=5000)
     parser.add_argument("--penalizer", type=float, default=0.1)
     return parser.parse_args()
+
+
+def setup_directories(output_dir: Path) -> dict[str, Path]:
+    """Create and return standard output directories."""
+    dirs = {
+        "preprocess": output_dir / "preprocess",
+        "logistic": output_dir / "logistic",
+        "cox": output_dir / "cox",
+        "geojson": output_dir / "geojson",
+    }
+    for directory in dirs.values():
+        directory.mkdir(parents=True, exist_ok=True)
+    return dirs
 
 
 def get_joined_output_path(args: argparse.Namespace, preprocess_out: Path) -> Path:
@@ -63,37 +75,15 @@ def main() -> None:
     """Execute the main data processing and modeling workflow."""
     args = parse_args()
     study_end = pd.Timestamp(args.study_end)
+    dirs = setup_directories(args.output_dir)
 
-    preprocess_out = args.output_dir / "preprocess"
-    logistic_out = args.output_dir / "logistic"
-    cox_out = args.output_dir / "cox"
-    geojson_out = args.output_dir / "geojson"
+    joined_path = get_joined_output_path(args, dirs["preprocess"])
+    execute_preprocess(args, joined_path)
 
-    for directory in [preprocess_out, logistic_out, cox_out, geojson_out]:
-        directory.mkdir(parents=True, exist_ok=True)
-
-    joined_output_path = get_joined_output_path(args, preprocess_out)
-
-    missing_inputs = [
-        str(path)
-        for path in [args.data_dir / args.licenses_file, args.data_dir / args.service_reqs_file]
-        if not path.exists()
-    ]
-    if missing_inputs:
-        raise FileNotFoundError(f"Missing required input file(s): {missing_inputs}")
-
-    joined_path = execute_preprocess(args, joined_output_path)
-
-    logistic_params = ModelingParams(
-        survival_months=args.survival_months,
-        variance_threshold=args.variance_threshold,
-        test_size=args.test_size,
-        random_state=args.random_state,
-        max_iter=args.max_iter,
-    )
+    logistic_params = extract_modeling_params(args)
     logistic_config = LogisticConfig(
         data_path=joined_path,
-        output_dir=logistic_out,
+        output_dir=dirs["logistic"],
         study_end=study_end,
         params=logistic_params,
     )
@@ -101,7 +91,7 @@ def main() -> None:
 
     cox_config = CoxConfig(
         data_path=joined_path,
-        output_dir=cox_out,
+        output_dir=dirs["cox"],
         study_end=study_end,
         variance_threshold=args.variance_threshold,
         penalizer=args.penalizer,
@@ -111,25 +101,18 @@ def main() -> None:
     geojson_config = GeoJSONConfig(
         joined_data_path=joined_path,
         licenses_path=args.data_dir / args.licenses_file,
-        output_path=geojson_out / "businesses.geojson",
+        output_path=dirs["geojson"] / "businesses.geojson",
     )
     geojson_path = run_geojson_pipeline(geojson_config)
 
     summary = {
-        "inputs": {
-            "licenses_path": str(args.data_dir / args.licenses_file),
-            "service_reqs_path": str(args.data_dir / args.service_reqs_file),
-        },
         "outputs": {
             "joined_dataset": str(joined_path),
-            "logistic_output_dir": str(logistic_out),
-            "cox_output_dir": str(cox_out),
             "geojson_path": str(geojson_path),
         },
         "logistic": logistic_results,
         "cox": cox_results,
     }
-
     print(json.dumps(summary, indent=2, default=str))
 
 

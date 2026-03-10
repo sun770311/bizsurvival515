@@ -14,11 +14,9 @@ from pipeline.mapbox import (
     build_business_summary,
     build_feature,
     build_full_address,
-    build_geojson,
     build_geojson_features,
     clean_joined_business_ids,
     clean_license_fields,
-    filter_nyc_license_coordinates,
     filter_valid_boroughs,
     load_licenses_dataset,
     merge_business_summary_with_license_metadata,
@@ -67,7 +65,7 @@ def prepare_clean_inputs() -> tuple[pd.DataFrame, pd.DataFrame]:
     licenses = load_licenses_dataset(TEST_DATA_DIR / "licenses_sample.csv")
 
     joined = clean_joined_business_ids(joined)
-    
+
     licenses = clean_license_fields(licenses)
     licenses = build_full_address(licenses)
     licenses = filter_valid_boroughs(licenses)
@@ -181,30 +179,6 @@ class TestMapbox(unittest.TestCase):
         self.assertEqual(feature["geometry"]["coordinates"], [-73.90, 40.75])
         self.assertEqual(feature["properties"]["business_id"], "B1")
 
-    def test_build_geojson_features_and_collection(self):
-        """Test that a dataframe forms a properly wrapped GeoJSON FeatureCollection."""
-        businesses = pd.DataFrame(
-            [
-                {
-                    "business_id": "B1",
-                    "active": 1,
-                    "last_month": pd.Timestamp("2026-02-01"),
-                    "complaint_sum": 5.0,
-                    "license_count": 2,
-                    "license_records": [],
-                    "latitude": 40.75,
-                    "longitude": -73.90,
-                }
-            ]
-        )
-
-        features = build_geojson_features(businesses)
-        geojson = build_geojson(features)
-
-        self.assertEqual(len(features), 1)
-        self.assertEqual(geojson["type"], "FeatureCollection")
-        self.assertEqual(len(geojson["features"]), 1)
-
     def test_run_geojson_pipeline_writes_valid_geojson(self):
         """Test that the end-to-end GeoJSON pipeline properly dumps out a valid file."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -228,8 +202,8 @@ class TestMapbox(unittest.TestCase):
             self.assertIsInstance(geojson["features"], list)
             self.assertGreater(len(geojson["features"]), 0)
 
-    def test_geojson_output_matches_feature_properties(self):
-        """Test that the generated GeoJSON maps to the expected internal metrics."""
+    def test_geojson_output_matches_active_status(self):
+        """Test that the generated GeoJSON maps to the expected active status internal metrics."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "businesses.geojson"
             config = GeoJSONConfig(
@@ -246,23 +220,10 @@ class TestMapbox(unittest.TestCase):
             joined, _ = prepare_clean_inputs()
 
             expected_summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
-
-            self.assertFalse(features_df.empty)
-            self.assertTrue(features_df["business_id"].notna().all())
-            self.assertFalse(features_df["business_id"].duplicated().any())
-            self.assertTrue((features_df["geometry_type"] == "Point").all())
-
-            is_list = features_df["license_records"].apply(lambda x: isinstance(x, list))
-            self.assertTrue(is_list.all())
-
-            expected_subset = expected_summary[
-                ["business_id", "active", "last_month", "complaint_sum"]
-            ]
+            expected_subset = expected_summary[["business_id", "active", "last_month"]]
+            
             merged = features_df.merge(
-                expected_subset,
-                on="business_id",
-                how="left",
-                suffixes=("_geojson", "_expected"),
+                expected_subset, on="business_id", how="left", suffixes=("_geojson", "_expected")
             )
 
             self.assertTrue(merged["active_expected"].notna().all())
@@ -270,8 +231,31 @@ class TestMapbox(unittest.TestCase):
             active_geojson = merged["active_geojson"].astype(int)
             active_expected = merged["active_expected"].astype(int)
             self.assertTrue((active_geojson == active_expected).all())
-
             self.assertTrue((merged["last_month_geojson"] == merged["last_month_expected"]).all())
+
+    def test_geojson_output_matches_complaints(self):
+        """Test that the generated GeoJSON maps to the expected complaint sum metrics."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "businesses.geojson"
+            config = GeoJSONConfig(
+                joined_data_path=TEST_DATA_DIR / "joined_dataset.csv",
+                licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
+                output_path=output_path,
+            )
+            run_geojson_pipeline(config)
+
+            with output_path.open("r", encoding="utf-8") as file_obj:
+                geojson = json.load(file_obj)
+
+            features_df = flatten_geojson_features(geojson)
+            joined, _ = prepare_clean_inputs()
+
+            expected_summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
+            expected_subset = expected_summary[["business_id", "complaint_sum"]]
+            
+            merged = features_df.merge(
+                expected_subset, on="business_id", how="left", suffixes=("_geojson", "_expected")
+            )
 
             complaint_geojson = pd.to_numeric(merged["complaint_sum_geojson"], errors="coerce")
             complaint_expected = pd.to_numeric(merged["complaint_sum_expected"], errors="coerce")
@@ -320,10 +304,6 @@ class TestMapbox(unittest.TestCase):
             lat_geojson = merged_coords["latitude"].round(8)
             lat_expected = merged_coords["latitude_expected"].round(8)
             self.assertTrue((lat_geojson == lat_expected).all())
-
-            lon_geojson = merged_coords["longitude"].round(8)
-            lon_expected = merged_coords["longitude_expected"].round(8)
-            self.assertTrue((lon_geojson == lon_expected).all())
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from pipeline.utils import (
     STUDY_END, VARIANCE_THRESHOLD, FeatureSelectionResult,
     load_joined_dataset, validate_joined_dataset, get_model_drop_columns,
+    get_model_req_columns, calculate_duration_months, extract_baseline_features,
     save_pickle_artifact, save_dataframe_artifact, add_standard_modeling_args
 )
 
@@ -37,17 +38,6 @@ class PreparedModelData:
     modeling_df: pd.DataFrame
     scaler: StandardScaler
     feature_selection: FeatureSelectionResult
-
-
-def validate_cox_dataset(joined: pd.DataFrame) -> None:
-    """Ensure specific columns required for cox models exist."""
-    reqs = [
-        "business_id", "month", "active_license_count", "total_311", "open",
-        "months_since_first_license", "location_cluster", "location_cluster_lat",
-        "location_cluster_lng", "business_latitude", "business_longitude",
-        "business_category_sum", "complaint_sum",
-    ]
-    validate_joined_dataset(joined, reqs)
 
 
 def build_time_varying_panel(
@@ -86,32 +76,12 @@ def build_business_level_dataset(
     df = joined.copy()
     df = df.loc[df["month"] <= study_end].copy()
 
-    first_month = df.groupby("business_id")["month"].min()
-    last_month = df.groupby("business_id")["month"].max()
-
-    duration_months = (
-        (last_month.dt.year - first_month.dt.year) * 12
-        + (last_month.dt.month - first_month.dt.month)
-    )
-
-    business_survival = pd.DataFrame(
-        {
-            "business_id": first_month.index,
-            "duration_months": duration_months,
-        }
-    ).reset_index(drop=True)
+    business_survival = calculate_duration_months(df)
 
     last_obs_open = df.sort_values(["business_id", "month"]).groupby("business_id")["open"].last()
     business_survival["event"] = (last_obs_open == 0).astype(int)
 
-    business_features = (
-        df.sort_values(["business_id", "month"])
-        .groupby("business_id")
-        .first()
-        .reset_index()
-    )
-
-    business_features = business_features.drop(columns=["month", "open"])
+    business_features = extract_baseline_features(df).drop(columns=["month", "open"])
 
     coxph_df = business_survival.merge(
         business_features,
@@ -214,7 +184,7 @@ def prepare_business_level_model_data(
     variance_threshold: float,
 ) -> PreparedModelData:
     """Filter features, scale, and assemble data for standard Cox."""
-    special_columns = ["duration_months", "event"]
+    special_columns = ["duration_months", "event", "first_month", "last_month"]
     feature_columns = get_feature_columns(coxph_df, special_columns)
 
     feature_selection = select_nonconstant_features(
@@ -268,7 +238,6 @@ def fit_standard_cox_model(
     model = CoxPHFitter(penalizer=penalizer)
     fit_df = modeling_df.drop(columns=["business_id"])
 
-    # Ensure duration is > 0 for standard Cox model
     fit_df["duration_months"] = fit_df["duration_months"].clip(lower=0.1)
 
     model.fit(
@@ -296,11 +265,23 @@ def save_time_varying_artifacts(
 ) -> dict[str, Path]:
     """Save time-varying model artifacts."""
     return {
-        "model": save_pickle_artifact(model, output_dir / "cox_time_varying_model.pkl"),
-        "scaler": save_pickle_artifact(prepared_data.scaler, output_dir / "cox_time_varying_scaler.pkl"),
-        "kept_columns": save_pickle_artifact(prepared_data.feature_selection.kept_columns, output_dir / "cox_time_varying_kept_columns.pkl"),
-        "dropped_columns": save_pickle_artifact(prepared_data.feature_selection.dropped_columns, output_dir / "cox_time_varying_dropped_columns.pkl"),
-        "summary_csv": save_dataframe_artifact(build_coefficient_summary(model), output_dir / "cox_time_varying_summary.csv"),
+        "model": save_pickle_artifact(
+            model, output_dir / "cox_time_varying_model.pkl"
+        ),
+        "scaler": save_pickle_artifact(
+            prepared_data.scaler, output_dir / "cox_time_varying_scaler.pkl"
+        ),
+        "kept_columns": save_pickle_artifact(
+            prepared_data.feature_selection.kept_columns, 
+            output_dir / "cox_time_varying_kept_columns.pkl"
+        ),
+        "dropped_columns": save_pickle_artifact(
+            prepared_data.feature_selection.dropped_columns, 
+            output_dir / "cox_time_varying_dropped_columns.pkl"
+        ),
+        "summary_csv": save_dataframe_artifact(
+            build_coefficient_summary(model), output_dir / "cox_time_varying_summary.csv"
+        ),
     }
 
 
@@ -311,18 +292,29 @@ def save_standard_artifacts(
 ) -> dict[str, Path]:
     """Save standard model artifacts."""
     return {
-        "model": save_pickle_artifact(model, output_dir / "coxph_model.pkl"),
-        "scaler": save_pickle_artifact(prepared_data.scaler, output_dir / "coxph_scaler.pkl"),
-        "kept_columns": save_pickle_artifact(prepared_data.feature_selection.kept_columns, output_dir / "coxph_kept_columns.pkl"),
-        "dropped_columns": save_pickle_artifact(prepared_data.feature_selection.dropped_columns, output_dir / "coxph_dropped_columns.pkl"),
-        "summary_csv": save_dataframe_artifact(build_coefficient_summary(model), output_dir / "coxph_summary.csv"),
+        "model": save_pickle_artifact(
+            model, output_dir / "coxph_model.pkl"
+        ),
+        "scaler": save_pickle_artifact(
+            prepared_data.scaler, output_dir / "coxph_scaler.pkl"
+        ),
+        "kept_columns": save_pickle_artifact(
+            prepared_data.feature_selection.kept_columns, output_dir / "coxph_kept_columns.pkl"
+        ),
+        "dropped_columns": save_pickle_artifact(
+            prepared_data.feature_selection.dropped_columns, 
+            output_dir / "coxph_dropped_columns.pkl"
+        ),
+        "summary_csv": save_dataframe_artifact(
+            build_coefficient_summary(model), output_dir / "coxph_summary.csv"
+        ),
     }
 
 
 def run_time_varying_cox_pipeline(config: CoxConfig) -> dict[str, object]:
     """Run full pipeline for time-varying Cox modeling."""
     joined = load_joined_dataset(config.data_path)
-    validate_cox_dataset(joined)
+    validate_joined_dataset(joined, get_model_req_columns())
 
     panel = build_time_varying_panel(joined, config.study_end)
 
@@ -354,7 +346,7 @@ def run_time_varying_cox_pipeline(config: CoxConfig) -> dict[str, object]:
 def run_standard_cox_pipeline(config: CoxConfig) -> dict[str, object]:
     """Run full pipeline for standard Cox modeling."""
     joined = load_joined_dataset(config.data_path)
-    validate_cox_dataset(joined)
+    validate_joined_dataset(joined, get_model_req_columns())
 
     coxph_df = build_business_level_dataset(joined, config.study_end)
 

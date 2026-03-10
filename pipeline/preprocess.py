@@ -5,7 +5,6 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 
@@ -107,14 +106,8 @@ def clean_service_requests(df: pd.DataFrame) -> pd.DataFrame:
     return cleaned
 
 
-def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
-    """Build the final joined business panel dataset."""
-    licenses_df = pd.read_csv(config.licenses_path, dtype={"Business Unique ID": "string"})
-    reqs_df = pd.read_csv(config.service_reqs_path, dtype={"Unique Key": "string"})
-
-    licenses = clean_licenses(licenses_df)
-    reqs = clean_service_requests(reqs_df)
-
+def _build_base_panel(licenses: pd.DataFrame) -> pd.DataFrame:
+    """Generate the base business-month panel from license lifetimes."""
     business_months = []
     for _, row in licenses.iterrows():
         bus_id = row["Business Unique ID"]
@@ -124,9 +117,9 @@ def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
             end_m = pd.Timestamp.now()
         end_m = end_m.replace(day=1)
 
-        category = "unknown"
-        if pd.notna(row.get("Business Category")):
-            category = row["Business Category"]
+        category = row.get("Business Category", "unknown")
+        if pd.isna(category):
+            category = "unknown"
 
         for month in month_range(start_m, end_m):
             business_months.append({
@@ -137,11 +130,10 @@ def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
                 "business_category": category,
             })
 
-    panel = pd.DataFrame(business_months)
-
-    if panel.empty:
+    if not business_months:
         return pd.DataFrame()
 
+    panel = pd.DataFrame(business_months)
     panel_agg = (
         panel.groupby(["business_id", "month"], as_index=False)
         .agg(
@@ -157,41 +149,46 @@ def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
         (panel_agg["month"].dt.year - first_license.dt.year) * 12
         + (panel_agg["month"].dt.month - first_license.dt.month)
     )
-
     panel_agg["open"] = 1
+    return panel_agg
 
-    coords = panel_agg[["business_latitude", "business_longitude"]].dropna()
-    if not coords.empty and len(coords) >= config.location_k:
-        kmeans = KMeans(n_clusters=config.location_k, random_state=42, n_init=10)
-        panel_agg.loc[coords.index, "location_cluster"] = kmeans.fit_predict(coords)
+
+def _add_location_clusters(panel: pd.DataFrame, location_k: int) -> pd.DataFrame:
+    """Add KMeans location clusters to the panel."""
+    coords = panel[["business_latitude", "business_longitude"]].dropna()
+    if not coords.empty and len(coords) >= location_k:
+        kmeans = KMeans(n_clusters=location_k, random_state=42, n_init=10)
+        panel.loc[coords.index, "location_cluster"] = kmeans.fit_predict(coords)
         centers = kmeans.cluster_centers_
-        panel_agg.loc[coords.index, "location_cluster_lat"] = centers[
-            panel_agg.loc[coords.index, "location_cluster"].astype(int), 0
+        panel.loc[coords.index, "location_cluster_lat"] = centers[
+            panel.loc[coords.index, "location_cluster"].astype(int), 0
         ]
-        panel_agg.loc[coords.index, "location_cluster_lng"] = centers[
-            panel_agg.loc[coords.index, "location_cluster"].astype(int), 1
+        panel.loc[coords.index, "location_cluster_lng"] = centers[
+            panel.loc[coords.index, "location_cluster"].astype(int), 1
         ]
     else:
-        panel_agg["location_cluster"] = 0
-        panel_agg["location_cluster_lat"] = 0.0
-        panel_agg["location_cluster_lng"] = 0.0
+        panel["location_cluster"] = 0
+        panel["location_cluster_lat"] = 0.0
+        panel["location_cluster_lng"] = 0.0
+    return panel
 
-    category_dummies = panel_agg["category_list"].explode().to_frame()
-    category_dummies["value"] = 1
-    category_pivot = (
-        category_dummies.pivot_table(
-            index=category_dummies.index,
-            columns="category_list",
-            values="value",
-            fill_value=0,
-        )
+
+def _add_category_dummies(panel: pd.DataFrame) -> pd.DataFrame:
+    """Pivot categories into dummy flags and attach to panel."""
+    dummies = panel["category_list"].explode().to_frame()
+    dummies["value"] = 1
+    pivot = dummies.pivot_table(
+        index=dummies.index, columns="category_list", values="value", fill_value=0
     )
-    category_pivot.columns = [
-        sanitize_feature_name(c, "business_category") for c in category_pivot.columns
-    ]
+    pivot.columns = [sanitize_feature_name(c, "business_category") for c in pivot.columns]
+    
+    combined = pd.concat([panel, pivot], axis=1)
+    combined["business_category_sum"] = combined[list(pivot.columns)].sum(axis=1)
+    return combined
 
-    panel_with_cats = pd.concat([panel_agg, category_pivot], axis=1)
 
+def _process_complaints(reqs: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Pivot 311 requests by month into dummy flags."""
     reqs_agg = (
         reqs.groupby(["month", "Problem (formerly Complaint Type)"])
         .size()
@@ -201,26 +198,40 @@ def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
         lambda x: sanitize_feature_name(x, "complaint_type")
     )
 
-    complaint_pivot = reqs_agg.pivot_table(
-        index="month",
-        columns="complaint_type",
-        values="complaint_count",
-        fill_value=0,
+    pivot = reqs_agg.pivot_table(
+        index="month", columns="complaint_type", values="complaint_count", fill_value=0
     ).reset_index()
 
+    cols = [c for c in pivot.columns if c != "month"]
+    return pivot, cols
+
+
+def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
+    """Build the final joined business panel dataset."""
+    licenses = clean_licenses(
+        pd.read_csv(config.licenses_path, dtype={"Business Unique ID": "string"})
+    )
+    reqs = clean_service_requests(
+        pd.read_csv(config.service_reqs_path, dtype={"Unique Key": "string"})
+    )
+
+    panel_agg = _build_base_panel(licenses)
+    if panel_agg.empty:
+        return pd.DataFrame()
+
+    panel_agg = _add_location_clusters(panel_agg, config.location_k)
+    panel_with_cats = _add_category_dummies(panel_agg)
+    
+    complaint_pivot, complaint_cols = _process_complaints(reqs)
     final_panel = panel_with_cats.merge(complaint_pivot, on="month", how="left")
 
-    complaint_cols = [c for c in complaint_pivot.columns if c != "month"]
     for col in complaint_cols:
         final_panel[col] = final_panel[col].fillna(0)
 
-    category_cols = [c for c in category_pivot.columns]
-    final_panel["business_category_sum"] = final_panel[category_cols].sum(axis=1)
     final_panel["complaint_sum"] = final_panel[complaint_cols].sum(axis=1)
     final_panel["total_311"] = final_panel["complaint_sum"]
 
-    final_panel.columns = make_unique_column_names(final_panel.columns.tolist())
-
+    final_panel.columns = make_unique_column_names(list(final_panel.columns))
     return final_panel.drop(columns=["category_list"])
 
 
