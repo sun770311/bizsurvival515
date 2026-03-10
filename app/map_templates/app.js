@@ -135,6 +135,57 @@ function buildPopupHtml(properties) {
 }
 
 async function loadGeoJSON() {
+  if (typeof EMBEDDED_GEOJSON !== "undefined") {
+    const data = EMBEDDED_GEOJSON;
+
+    if (!data || data.type !== "FeatureCollection" || !Array.isArray(data.features)) {
+      throw new Error("Embedded GeoJSON is not a valid FeatureCollection.");
+    }
+
+    let validCount = 0;
+    for (const feature of data.features) {
+      const coords = feature?.geometry?.coordinates;
+      if (
+        Array.isArray(coords) &&
+        coords.length === 2 &&
+        Number.isFinite(coords[0]) &&
+        Number.isFinite(coords[1])
+      ) {
+        validCount += 1;
+      }
+    }
+
+    if (validCount === 0) {
+      throw new Error("Embedded GeoJSON loaded, but no valid point coordinates were found.");
+    }
+
+    data.features = data.features.map((feature) => {
+      const properties = feature?.properties || {};
+      let licenseRecords = properties.license_records;
+      if (typeof licenseRecords === "string") {
+        try {
+          licenseRecords = JSON.parse(licenseRecords);
+        } catch {
+          licenseRecords = [];
+        }
+      }
+      if (!Array.isArray(licenseRecords)) licenseRecords = [];
+
+      const derivedBorough = normalizeBorough(licenseRecords[0]?.borough || properties.borough);
+
+      return {
+        ...feature,
+        properties: {
+          ...properties,
+          borough_display: derivedBorough
+        }
+      };
+    });
+
+    setStatus(`Loaded embedded GeoJSON successfully. Features: ${data.features.length}`);
+    return data;
+  }
+
   setStatus(`Fetching ${GEOJSON_URL} ...`);
   const response = await fetch(GEOJSON_URL);
 
