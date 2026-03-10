@@ -13,7 +13,9 @@ dependencies = [
     "numpy",
     "pandas",
     "scikit-learn",
-    "streamlit"
+    "streamlit",
+    "scipy",
+    "lifelines"
 ]
 
 [project.optional-dependencies]
@@ -23,3 +25,6 @@ dev = [
     "coveralls",
     "build"
 ]
+
+[tool.setuptools]
+packages = ["pipeline"]
