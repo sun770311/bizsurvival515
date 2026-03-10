@@ -25,6 +25,7 @@ class PipelineConfig:
 def sanitize_feature_name(name: str, prefix: str) -> str:
     """Sanitize strings to use as dataframe column features."""
     cleaned = str(name).lower()
+    cleaned = cleaned.replace("&", "and")
     cleaned = re.sub(r"[^a-z0-9_]+", "_", cleaned)
     cleaned = re.sub(r"_+", "_", cleaned).strip("_")
     return f"{prefix}_{cleaned}"
@@ -155,6 +156,10 @@ def _build_base_panel(licenses: pd.DataFrame) -> pd.DataFrame:
 
 def _add_location_clusters(panel: pd.DataFrame, location_k: int) -> pd.DataFrame:
     """Add KMeans location clusters to the panel."""
+    panel["location_cluster"] = 0
+    panel["location_cluster_lat"] = 0.0
+    panel["location_cluster_lng"] = 0.0
+
     coords = panel[["business_latitude", "business_longitude"]].dropna()
     if not coords.empty and len(coords) >= location_k:
         kmeans = KMeans(n_clusters=location_k, random_state=42, n_init=10)
@@ -166,10 +171,8 @@ def _add_location_clusters(panel: pd.DataFrame, location_k: int) -> pd.DataFrame
         panel.loc[coords.index, "location_cluster_lng"] = centers[
             panel.loc[coords.index, "location_cluster"].astype(int), 1
         ]
-    else:
-        panel["location_cluster"] = 0
-        panel["location_cluster_lat"] = 0.0
-        panel["location_cluster_lng"] = 0.0
+
+    panel["location_cluster"] = panel["location_cluster"].astype(int)
     return panel
 
 
@@ -209,10 +212,18 @@ def _process_complaints(reqs: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
     """Build the final joined business panel dataset."""
     licenses = clean_licenses(
-        pd.read_csv(config.licenses_path, dtype={"Business Unique ID": "string"})
+        pd.read_csv(
+            config.licenses_path,
+            dtype={"Business Unique ID": "string"},
+            low_memory=False,
+        )
     )
     reqs = clean_service_requests(
-        pd.read_csv(config.service_reqs_path, dtype={"Unique Key": "string"})
+        pd.read_csv(
+            config.service_reqs_path,
+            dtype={"Unique Key": "string"},
+            low_memory=False,
+        )
     )
 
     panel_agg = _build_base_panel(licenses)
@@ -224,6 +235,7 @@ def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
 
     complaint_pivot, complaint_cols = _process_complaints(reqs)
     final_panel = panel_with_cats.merge(complaint_pivot, on="month", how="left")
+    final_panel = final_panel.copy()
 
     for col in complaint_cols:
         final_panel[col] = final_panel[col].fillna(0)

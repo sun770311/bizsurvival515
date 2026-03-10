@@ -36,7 +36,7 @@ def load_artifacts(
 
 def build_baseline_profile(kept_columns: list[str]) -> pd.DataFrame:
     """Create a baseline business profile matching the exact feature space of the model."""
-    profile = pd.DataFrame(0, index=[0], columns=kept_columns)
+    profile = pd.DataFrame(0.0, index=[0], columns=kept_columns)
     return profile
 
 
@@ -49,7 +49,7 @@ def build_hypothetical_profiles(kept_columns: list[str]) -> pd.DataFrame:
     def _create_category_profile(category_col: str) -> pd.DataFrame:
         prof = baseline.copy()
         if category_col in prof.columns:
-            prof[category_col] = 1
+            prof[category_col] = 1.0
         return prof
 
     profiles["electronics_store"] = _create_category_profile(
@@ -73,12 +73,11 @@ def build_hypothetical_profiles(kept_columns: list[str]) -> pd.DataFrame:
 
     many_licenses = baseline.copy()
     if "active_license_count" in many_licenses.columns:
-        many_licenses["active_license_count"] = 5
+        many_licenses["active_license_count"] = 5.0
     profiles["many_licenses"] = many_licenses
 
-    profiles_df = pd.concat(profiles.values(), keys=profiles.keys()).reset_index(level=1, drop=True)
-
-    return profiles_df
+    profiles_df = pd.concat(profiles.values(), keys=profiles.keys())
+    return profiles_df.reset_index(level=1, drop=True)
 
 
 def predict_profiles(pipeline: Pipeline, profiles: pd.DataFrame) -> pd.DataFrame:

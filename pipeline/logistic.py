@@ -273,7 +273,6 @@ def build_logistic_pipeline(max_iter: int, random_state: int) -> Pipeline:
             (
                 "model",
                 LogisticRegression(
-                    penalty="l2",
                     C=1.0,
                     max_iter=max_iter,
                     random_state=random_state,

@@ -79,7 +79,7 @@ def build_business_level_dataset(
     business_survival = calculate_duration_months(df)
 
     last_obs_open = df.sort_values(["business_id", "month"]).groupby("business_id")["open"].last()
-    business_survival["event"] = (last_obs_open == 0).astype(int)
+    business_survival["event"] = business_survival["business_id"].map(last_obs_open).eq(0).astype(int)
 
     business_features = extract_baseline_features(df).drop(columns=["month", "open"])
 
