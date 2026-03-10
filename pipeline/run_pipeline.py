@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from pipeline.utils import ModelingParams, extract_modeling_params
+from pipeline.utils import extract_modeling_params
 from pipeline.preprocess import PipelineConfig
 from pipeline.preprocess import run_pipeline as run_preprocess_pipeline
 from pipeline.logistic import LogisticConfig, run_logistic_pipeline

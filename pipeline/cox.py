@@ -272,11 +272,11 @@ def save_time_varying_artifacts(
             prepared_data.scaler, output_dir / "cox_time_varying_scaler.pkl"
         ),
         "kept_columns": save_pickle_artifact(
-            prepared_data.feature_selection.kept_columns, 
+            prepared_data.feature_selection.kept_columns,
             output_dir / "cox_time_varying_kept_columns.pkl"
         ),
         "dropped_columns": save_pickle_artifact(
-            prepared_data.feature_selection.dropped_columns, 
+            prepared_data.feature_selection.dropped_columns,
             output_dir / "cox_time_varying_dropped_columns.pkl"
         ),
         "summary_csv": save_dataframe_artifact(
@@ -302,7 +302,7 @@ def save_standard_artifacts(
             prepared_data.feature_selection.kept_columns, output_dir / "coxph_kept_columns.pkl"
         ),
         "dropped_columns": save_pickle_artifact(
-            prepared_data.feature_selection.dropped_columns, 
+            prepared_data.feature_selection.dropped_columns,
             output_dir / "coxph_dropped_columns.pkl"
         ),
         "summary_csv": save_dataframe_artifact(

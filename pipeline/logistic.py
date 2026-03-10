@@ -377,7 +377,7 @@ def save_model_artifacts(
             prepared_data.feature_selection.kept_columns, output_dir / "logistic_kept_columns.pkl"
         ),
         "dropped_columns": save_pickle_artifact(
-            prepared_data.feature_selection.dropped_columns, 
+            prepared_data.feature_selection.dropped_columns,
             output_dir / "logistic_dropped_columns.pkl"
         ),
         "coefficient_summary": save_dataframe_artifact(

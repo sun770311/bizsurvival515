@@ -175,22 +175,39 @@ class TestInspectLogistic(unittest.TestCase):
 
     def test_check_hypothetical_expectations_returns_expected_columns(self):
         """Test that hypothetical expectations checking returns the expected structure."""
-        results = pd.DataFrame(
-            {
-                "profile": ["baseline", "electronics_store", "vape_shop", "bingo_operator", "many_licenses", "laundries", "car_wash", "debt_collection"],
-                "predicted_survival_probability": [0.50, 0.60, 0.40, 0.55, 0.70, 0.45, 0.52, 0.48],
-                "predicted_class": [1, 1, 0, 1, 1, 0, 1, 0],
-            }
-        )
+        profiles = [
+            "baseline", "electronics_store", "vape_shop", "bingo_operator", 
+            "many_licenses", "laundries", "car_wash", "debt_collection"
+        ]
+        probs = [0.50, 0.60, 0.40, 0.55, 0.70, 0.45, 0.52, 0.48]
+        classes = [1, 1, 0, 1, 1, 0, 1, 0]
+        
+        results = pd.DataFrame({
+            "profile": profiles, 
+            "predicted_survival_probability": probs, 
+            "predicted_class": classes
+        })
 
-        coef_summary = pd.DataFrame(
-            {"feature": ["business_category_electronics_store", "business_category_electronic_cigarette_dealer", "business_category_bingo_game_operator", "active_license_count", "business_category_laundries", "business_category_car_wash", "business_category_debt_collection_agency"], "coefficient": [1.0, -1.0, 0.5, 0.8, -0.3, 0.2, -0.4]}
-        )
+        coef_data = [
+            ("business_category_electronics_store", 1.0),
+            ("business_category_electronic_cigarette_dealer", -1.0),
+            ("business_category_bingo_game_operator", 0.5),
+            ("active_license_count", 0.8),
+            ("business_category_laundries", -0.3),
+            ("business_category_car_wash", 0.2),
+            ("business_category_debt_collection_agency", -0.4)
+        ]
+        coef_summary = pd.DataFrame(coef_data, columns=["feature", "coefficient"])
 
         expectation_results = check_hypothetical_expectations(results, coef_summary)
 
         self.assertFalse(expectation_results.empty)
-        self.assertEqual(set(expectation_results.columns), {"profile", "feature", "expected_vs_baseline", "actual_vs_baseline", "matches_expectation"})
+        
+        expected_cols = {
+            "profile", "feature", "expected_vs_baseline", 
+            "actual_vs_baseline", "matches_expectation"
+        }
+        self.assertEqual(set(expectation_results.columns), expected_cols)
         self.assertEqual(len(expectation_results), 7)
 
     def test_check_hypothetical_expectations_with_real_artifacts(self):

@@ -91,9 +91,15 @@ def calculate_duration_months(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate the survival duration in months for each business."""
     first = df.groupby("business_id")["month"].min()
     last = df.groupby("business_id")["month"].max()
-    duration = ((last.dt.year - first.dt.year) * 12 + (last.dt.month - first.dt.month))
+    duration = (last.dt.year - first.dt.year) * 12 + (last.dt.month - first.dt.month)
+    
     return pd.DataFrame(
-        {"business_id": first.index, "first_month": first, "last_month": last, "duration_months": duration}
+        {
+            "business_id": first.index,
+            "first_month": first,
+            "last_month": last,
+            "duration_months": duration,
+        }
     ).reset_index(drop=True)
 
 

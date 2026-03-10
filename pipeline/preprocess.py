@@ -181,7 +181,7 @@ def _add_category_dummies(panel: pd.DataFrame) -> pd.DataFrame:
         index=dummies.index, columns="category_list", values="value", fill_value=0
     )
     pivot.columns = [sanitize_feature_name(c, "business_category") for c in pivot.columns]
-    
+
     combined = pd.concat([panel, pivot], axis=1)
     combined["business_category_sum"] = combined[list(pivot.columns)].sum(axis=1)
     return combined
@@ -221,7 +221,7 @@ def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
 
     panel_agg = _add_location_clusters(panel_agg, config.location_k)
     panel_with_cats = _add_category_dummies(panel_agg)
-    
+
     complaint_pivot, complaint_cols = _process_complaints(reqs)
     final_panel = panel_with_cats.merge(complaint_pivot, on="month", how="left")
 

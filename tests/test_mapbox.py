@@ -14,7 +14,6 @@ from pipeline.mapbox import (
     build_business_summary,
     build_feature,
     build_full_address,
-    build_geojson_features,
     clean_joined_business_ids,
     clean_license_fields,
     filter_valid_boroughs,
@@ -203,7 +202,7 @@ class TestMapbox(unittest.TestCase):
             self.assertGreater(len(geojson["features"]), 0)
 
     def test_geojson_output_matches_active_status(self):
-        """Test that the generated GeoJSON maps to the expected active status internal metrics."""
+        """Test that the generated GeoJSON maps to the expected active status metrics."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "businesses.geojson"
             config = GeoJSONConfig(

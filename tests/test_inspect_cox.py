@@ -196,19 +196,35 @@ class TestInspectCox(unittest.TestCase):
 
     def test_check_directional_expectations_returns_expected_columns(self):
         """Test that checking directional expectations returns expected results structure."""
+        res_dict = {
+            "baseline": 1.0, 
+            "electronics_store": 2.0, 
+            "electronic_cigarette_dealer": 2.5,
+            "bingo_game_operator": 0.5, 
+            "multi_license_business": 0.4
+        }
         results = pd.DataFrame(
-            {"partial_hazard": [1.0, 2.0, 2.5, 0.5, 0.4]},
-            index=["baseline", "electronics_store", "electronic_cigarette_dealer", "bingo_game_operator", "multi_license_business"],
+            {"partial_hazard": list(res_dict.values())}, 
+            index=list(res_dict.keys())
         )
 
-        coef_summary = pd.DataFrame(
-            {"feature": ["business_category_electronics_store", "business_category_electronic_cigarette_dealer", "business_category_bingo_game_operator", "active_license_count"], "coef": [1.0, 1.0, -1.0, -1.0]}
-        )
+        coef_data = [
+            ("business_category_electronics_store", 1.0),
+            ("business_category_electronic_cigarette_dealer", 1.0),
+            ("business_category_bingo_game_operator", -1.0),
+            ("active_license_count", -1.0)
+        ]
+        coef_summary = pd.DataFrame(coef_data, columns=["feature", "coef"])
 
         checks = check_directional_expectations(results, coef_summary)
 
         self.assertFalse(checks.empty)
-        self.assertEqual(set(checks.columns), {"profile", "feature", "expected_relation", "actual_relation", "matches_expectation"})
+        
+        expected_cols = {
+            "profile", "feature", "expected_relation", 
+            "actual_relation", "matches_expectation"
+        }
+        self.assertEqual(set(checks.columns), expected_cols)
         self.assertEqual(len(checks), 4)
         self.assertTrue(bool(checks["matches_expectation"].all()))
 
