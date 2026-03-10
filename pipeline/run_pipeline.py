@@ -1,154 +1,211 @@
-"""Run the full business survival pipeline in sequence.
-
-Pipeline steps:
-1. Optionally install required Python packages
-2. Run preprocess.py and its tests
-3. Run cox.py and its tests
-4. Run logistic.py and its tests
-5. Run mapbox.py and its tests
-
-Example:
-    python pipeline.py
-
-Optional:
-    python pipeline.py --install-deps
-    python pipeline.py --base-dir /path/to/project
-"""
-
 from __future__ import annotations
 
 import argparse
-import subprocess
-import sys
+import json
 from pathlib import Path
 
+import pandas as pd
 
-REQUIRED_PACKAGES = [
-    "pandas",
-    "numpy",
-    "scikit-learn",
-    "lifelines",
-]
-
-PIPELINE_SCRIPTS = [
-    "preprocess.py",
-    "test_preprocess.py",
-    "cox.py",
-    "test_cox.py",
-    "logistic.py",
-    "test_logistic.py",
-    "mapbox.py",
-    "test_mapbox.py",
-]
-
-
-def run_command(command: list[str]) -> None:
-    """Run a shell command and stop execution if it fails.
-
-    Args:
-        command: Command and arguments as a list.
-
-    Raises:
-        subprocess.CalledProcessError: If the command exits with a nonzero code.
-    """
-    print(f"\n[RUNNING] {' '.join(command)}")
-    subprocess.run(command, check=True)
-
-
-def install_dependencies() -> None:
-    """Install required Python packages using pip."""
-    print("\n[INFO] Installing required dependencies...")
-    run_command([sys.executable, "-m", "pip", "install", *REQUIRED_PACKAGES])
-
-
-def validate_scripts(base_dir: Path) -> None:
-    """Ensure all required pipeline scripts exist.
-
-    Args:
-        base_dir: Directory containing the pipeline scripts.
-
-    Raises:
-        FileNotFoundError: If any required script is missing.
-    """
-    missing_files = [
-        script_name
-        for script_name in PIPELINE_SCRIPTS
-        if not (base_dir / script_name).exists()
-    ]
-
-    if missing_files:
-        missing_str = ", ".join(missing_files)
-        raise FileNotFoundError(
-            f"Missing required script(s) in {base_dir}: {missing_str}"
-        )
-
-
-def run_pipeline(base_dir: Path) -> None:
-    """Run all pipeline scripts in order.
-
-    Args:
-        base_dir: Directory containing the pipeline scripts.
-    """
-    validate_scripts(base_dir)
-
-    for script_name in PIPELINE_SCRIPTS:
-        script_path = base_dir / script_name
-        run_command([sys.executable, str(script_path)])
+from pipeline.preprocess import PipelineConfig, run_pipeline as run_preprocess_pipeline
+from pipeline.logistic import LogisticConfig, run_logistic_pipeline
+from pipeline.cox import CoxConfig, run_full_pipeline as run_cox_full_pipeline
+from pipeline.mapbox import GeoJSONConfig, run_geojson_pipeline
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments.
-
-    Returns:
-        Parsed CLI arguments.
-    """
     parser = argparse.ArgumentParser(
-        description="Run the full business survival pipeline."
+        description="Run the full sampled-data pipeline: preprocess, logistic, cox, and geojson."
     )
     parser.add_argument(
-        "--base-dir",
+        "--data-dir",
         type=Path,
-        default=Path(__file__).resolve().parent,
-        help="Directory containing preprocess.py, cox.py, logistic.py, "
-             "mapbox.py, and test files.",
+        default=Path("tests/data"),
+        help="Directory containing licenses_sample.csv and service_reqs_sample.csv.",
     )
     parser.add_argument(
-        "--install-deps",
+        "--output-dir",
+        type=Path,
+        default=Path("outputs"),
+        help="Directory where pipeline outputs will be written.",
+    )
+    parser.add_argument(
+        "--licenses-file",
+        type=str,
+        default="licenses_sample.csv",
+        help="Sampled licenses filename inside --data-dir.",
+    )
+    parser.add_argument(
+        "--service-reqs-file",
+        type=str,
+        default="service_reqs_sample.csv",
+        help="Sampled service requests filename inside --data-dir.",
+    )
+    parser.add_argument(
+        "--joined-file",
+        type=str,
+        default="joined_dataset.csv",
+        help="Joined dataset filename to create inside --data-dir or --output-dir.",
+    )
+    parser.add_argument(
+        "--write-joined-to-data-dir",
         action="store_true",
-        help="Install required packages before running the pipeline.",
+        help="Write joined_dataset.csv into --data-dir instead of --output-dir/preprocess.",
+    )
+    parser.add_argument(
+        "--location-k",
+        type=int,
+        default=25,
+        help="Number of location clusters for preprocessing.",
+    )
+    parser.add_argument(
+        "--radius-meters",
+        type=float,
+        default=50.0,
+        help="Radius in meters for joining 311 requests to businesses.",
+    )
+    parser.add_argument(
+        "--study-end",
+        type=str,
+        default="2026-03-01",
+        help="Study end date in YYYY-MM-DD format for logistic and cox.",
+    )
+    parser.add_argument(
+        "--survival-months",
+        type=int,
+        default=36,
+        help="Survival horizon for logistic regression.",
+    )
+    parser.add_argument(
+        "--variance-threshold",
+        type=float,
+        default=1e-8,
+        help="Variance threshold for logistic and cox feature filtering.",
+    )
+    parser.add_argument(
+        "--test-size",
+        type=float,
+        default=0.2,
+        help="Test split fraction for logistic regression.",
+    )
+    parser.add_argument(
+        "--random-state",
+        type=int,
+        default=42,
+        help="Random seed for logistic regression.",
+    )
+    parser.add_argument(
+        "--max-iter",
+        type=int,
+        default=5000,
+        help="Maximum iterations for logistic regression.",
+    )
+    parser.add_argument(
+        "--penalizer",
+        type=float,
+        default=0.1,
+        help="Penalizer for Cox models.",
     )
     return parser.parse_args()
 
 
-def main() -> int:
-    """Run the pipeline entry point.
-
-    Returns:
-        Exit code.
-    """
+def main() -> None:
     args = parse_args()
-    base_dir = args.base_dir.resolve()
 
-    print(f"[INFO] Using base directory: {base_dir}")
+    study_end = pd.Timestamp(args.study_end)
 
-    try:
-        if args.install_deps:
-            install_dependencies()
+    data_dir = args.data_dir
+    output_dir = args.output_dir
+    preprocess_output_dir = output_dir / "preprocess"
+    logistic_output_dir = output_dir / "logistic"
+    cox_output_dir = output_dir / "cox"
+    geojson_output_dir = output_dir / "geojson"
 
-        run_pipeline(base_dir)
-    except FileNotFoundError as error:
-        print(f"[ERROR] {error}", file=sys.stderr)
-        return 1
-    except subprocess.CalledProcessError as error:
-        print(
-            f"[ERROR] Command failed with exit code {error.returncode}",
-            file=sys.stderr,
+    licenses_path = data_dir / args.licenses_file
+    service_reqs_path = data_dir / args.service_reqs_file
+
+    if args.write_joined_to_data_dir:
+        joined_output_path = data_dir / args.joined_file
+    else:
+        joined_output_path = preprocess_output_dir / args.joined_file
+
+    geojson_output_path = geojson_output_dir / "businesses.geojson"
+
+    missing_inputs = [
+        str(path)
+        for path in [licenses_path, service_reqs_path]
+        if not path.exists()
+    ]
+    if missing_inputs:
+        raise FileNotFoundError(
+            f"Missing required input file(s): {missing_inputs}"
         )
-        return error.returncode
 
-    print("\n[SUCCESS] Pipeline completed successfully.")
-    return 0
+    preprocess_output_dir.mkdir(parents=True, exist_ok=True)
+    logistic_output_dir.mkdir(parents=True, exist_ok=True)
+    cox_output_dir.mkdir(parents=True, exist_ok=True)
+    geojson_output_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1) Preprocess sampled raw data into joined_dataset.csv
+    earth_radius_meters = 6_371_000
+    radius_radians = args.radius_meters / earth_radius_meters
+
+    preprocess_config = PipelineConfig(
+        licenses_path=licenses_path,
+        service_reqs_path=service_reqs_path,
+        output_path=joined_output_path,
+        location_k=args.location_k,
+        radius_radians=radius_radians,
+    )
+    joined_path = run_preprocess_pipeline(preprocess_config)
+
+    # 2) Logistic regression pipeline
+    logistic_config = LogisticConfig(
+        data_path=joined_path,
+        output_dir=logistic_output_dir,
+        study_end=study_end,
+        survival_months=args.survival_months,
+        variance_threshold=args.variance_threshold,
+        test_size=args.test_size,
+        random_state=args.random_state,
+        max_iter=args.max_iter,
+    )
+    logistic_results = run_logistic_pipeline(logistic_config)
+
+    # 3) Cox pipeline (both time-varying and standard)
+    cox_config = CoxConfig(
+        data_path=joined_path,
+        output_dir=cox_output_dir,
+        study_end=study_end,
+        variance_threshold=args.variance_threshold,
+        penalizer=args.penalizer,
+    )
+    cox_results = run_cox_full_pipeline(cox_config)
+
+    # 4) Mapbox GeoJSON export
+    geojson_config = GeoJSONConfig(
+        joined_data_path=joined_path,
+        licenses_path=licenses_path,
+        output_path=geojson_output_path,
+    )
+    geojson_path = run_geojson_pipeline(geojson_config)
+
+    summary = {
+        "inputs": {
+            "licenses_path": str(licenses_path),
+            "service_reqs_path": str(service_reqs_path),
+        },
+        "outputs": {
+            "joined_dataset": str(joined_path),
+            "logistic_output_dir": str(logistic_output_dir),
+            "cox_output_dir": str(cox_output_dir),
+            "geojson_path": str(geojson_path),
+        },
+        "logistic": logistic_results,
+        "cox": cox_results,
+    }
+
+    print(json.dumps(summary, indent=2, default=str))
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

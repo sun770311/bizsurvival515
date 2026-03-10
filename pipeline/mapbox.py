@@ -18,6 +18,7 @@ Output:
 
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,7 +29,6 @@ import pandas as pd
 
 CUTOFF_DATE = pd.Timestamp("2026-03-01")
 
-# Conservative NYC bounding box
 NYC_LAT_MIN = 40.49
 NYC_LAT_MAX = 40.92
 NYC_LNG_MIN = -74.27
@@ -203,13 +203,7 @@ def build_full_address(licenses: pd.DataFrame) -> pd.DataFrame:
     )
 
     full_address = (
-        street_address
-        + ", "
-        + city_part
-        + " "
-        + state_part
-        + " "
-        + zip_part
+        street_address + ", " + city_part + " " + state_part + " " + zip_part
     ).str.replace(r"\s+", " ", regex=True).str.strip(" ,")
 
     enriched["full_address"] = full_address.replace(
@@ -330,11 +324,7 @@ def build_license_list_for_business(group: pd.DataFrame) -> list[dict[str, Any]]
 
 
 def build_business_license_metadata(licenses: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate license metadata to one row per business_id.
-
-    Uses the first valid NYC coordinate pair found for each business_id and keeps
-    the full list of license-associated names/addresses/contact fields for popup use.
-    """
+    """Aggregate license metadata to one row per business_id."""
     deduped = deduplicate_license_records(licenses)
 
     metadata_rows: list[dict[str, Any]] = []
@@ -383,11 +373,7 @@ def build_feature(row: pd.Series) -> dict[str, Any] | None:
         "type": "Feature",
         "properties": {
             "business_id": convert_value(row.get("business_id")),
-            "active": (
-                int(row["active"])
-                if not pd.isna(row.get("active"))
-                else None
-            ),
+            "active": int(row["active"]) if not pd.isna(row.get("active")) else None,
             "last_month": convert_value(row.get("last_month")),
             "complaint_sum": convert_value(row.get("complaint_sum")),
             "license_count": convert_value(row.get("license_count")),
@@ -466,14 +452,51 @@ def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
     return save_geojson(geojson, config.output_path)
 
 
+def parse_args() -> GeoJSONConfig:
+    """Parse CLI arguments into a GeoJSONConfig."""
+    parser = argparse.ArgumentParser(
+        description="Build business-level Mapbox GeoJSON from joined panel and licenses."
+    )
+    parser.add_argument(
+        "--joined-data",
+        type=Path,
+        required=True,
+        help="Path to joined_dataset.csv",
+    )
+    parser.add_argument(
+        "--licenses",
+        type=Path,
+        required=True,
+        help="Path to licenses.csv",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Path to write businesses.geojson",
+    )
+    parser.add_argument(
+        "--cutoff-date",
+        type=str,
+        default=str(CUTOFF_DATE.date()),
+        help="Cutoff date in YYYY-MM-DD format for active status",
+    )
+
+    args = parser.parse_args()
+
+    return GeoJSONConfig(
+        joined_data_path=args.joined_data,
+        licenses_path=args.licenses,
+        output_path=args.output,
+        cutoff_date=pd.Timestamp(args.cutoff_date),
+    )
+
+
 def main() -> None:
     """Entry point for script execution."""
-    config = GeoJSONConfig(
-        joined_data_path=Path("/content/drive/MyDrive/joined_dataset.csv"),
-        licenses_path=Path("/content/drive/MyDrive/licenses.csv"),
-        output_path=Path("/content/drive/MyDrive/businesses.geojson"),
-    )
-    run_geojson_pipeline(config)
+    config = parse_args()
+    output_path = run_geojson_pipeline(config)
+    print(f"Saved GeoJSON to {output_path}")
 
 
 if __name__ == "__main__":

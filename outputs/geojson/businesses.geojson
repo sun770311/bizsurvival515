@@ -1,0 +1,3824 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1071367-2022",
+        "active": 1,
+        "last_month": "2026-06-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "APPLE INC",
+            "address": "9015 QUEENS BLVD 2054, ELMHURST NY 11373",
+            "borough": "Queens",
+            "contact_phone": "4089961010",
+            "license_number": "2022929-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.871578,
+          40.73385
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1074337-2022",
+        "active": 0,
+        "last_month": "2024-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "BH OF 170 INC",
+            "address": "112 E 170TH ST, BRONX NY 10452",
+            "borough": "Bronx",
+            "contact_phone": null,
+            "license_number": "2083197-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.915421,
+          40.83934
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1081541-2022",
+        "active": 0,
+        "last_month": "2024-06-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "BONANZA ELECTRONICS LLC",
+            "address": "54 E 170TH ST, BRONX NY 10452",
+            "borough": "Bronx",
+            "contact_phone": "7184441216",
+            "license_number": "1467108-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "BONANZA ELECTRONICS LLC",
+            "address": "54 E 170TH ST, BRONX NY 10452",
+            "borough": "Bronx",
+            "contact_phone": "7184441216",
+            "license_number": "1467110-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.916509,
+          40.83976
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1086510-2022",
+        "active": 1,
+        "last_month": "2027-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "247 NORTH 7TH STREET PARKING CORP",
+            "address": "249 NORTH 7 STREET, BROOKLYN NY 11211",
+            "borough": "Brooklyn",
+            "contact_phone": "2127367171",
+            "license_number": "2038904-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Garage & Parking Lot"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.954602,
+          40.7159
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1089071-2022",
+        "active": 0,
+        "last_month": "2022-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "AMTEL1564 OZONE PARK LLC",
+            "address": "9705 ROCKAWAY BLVD, OZONE PARK NY 11417",
+            "borough": "Queens",
+            "contact_phone": "4694847405",
+            "license_number": "2070796-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.841778,
+          40.68029
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1092244-2022",
+        "active": 0,
+        "last_month": "2025-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "AQUA POOLS, LLC",
+            "address": "107 LEE AVE 2, STATEN ISLAND NY 10307",
+            "borough": "Staten Island",
+            "contact_phone": "7189676775",
+            "license_number": "1261662-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.245876,
+          40.51395
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1094428-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "A & B CONSTRUCTION NY CORP",
+            "address": "8337 253RD ST, BELLEROSE NY 11426",
+            "borough": "Queens",
+            "contact_phone": "9173853890",
+            "license_number": "2083124-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.715115,
+          40.73703
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1094431-2022",
+        "active": 0,
+        "last_month": "2025-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Bronx Central General Contractors Inc.",
+            "address": "217 BOWNE ST, BRONX NY 10464",
+            "borough": "Bronx",
+            "contact_phone": "9175974502",
+            "license_number": "2103430-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.785889,
+          40.85141
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1102838-2022",
+        "active": 0,
+        "last_month": "2025-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "BLUE DOG AUTO FIX INC",
+            "address": "12 ANDROS AVE, STATEN ISLAND NY 10303",
+            "borough": "Staten Island",
+            "contact_phone": "9176746967",
+            "license_number": "2107846-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.162348,
+          40.63766
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1103795-2022",
+        "active": 1,
+        "last_month": "2027-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "1334 RICHMOND ROAD CORP",
+            "address": "1334 RICHMOND RD, STATEN ISLAND NY 10304",
+            "borough": "Staten Island",
+            "contact_phone": "718-667-0856",
+            "license_number": "2010003-2129-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "1334 RICHMOND ROAD CORP",
+            "address": "1334 RICHMOND RD, STATEN ISLAND NY 10304",
+            "borough": "Staten Island",
+            "contact_phone": "718-667-0856",
+            "license_number": "2074247-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.096059,
+          40.59585
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1104547-2022",
+        "active": 0,
+        "last_month": "2023-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "BEST BUY STORES",
+            "address": "5100 KINGS PLAZA, BROOKLYN NY 11234",
+            "borough": "Brooklyn",
+            "contact_phone": "6122914863",
+            "license_number": "1385500-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "BEST BUY STORES",
+            "address": "5100 KINGS PLAZA, BROOKLYN NY 11234",
+            "borough": "Brooklyn",
+            "contact_phone": "6122914863",
+            "license_number": "1390375-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.922094,
+          40.61006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1105178-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 2.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "ACE CONSTRUCTION NY INC",
+            "address": "13342 126TH ST, SOUTH OZONE PARK NY 11420",
+            "borough": "Queens",
+            "contact_phone": "9176434308",
+            "license_number": "2012993-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.813095,
+          40.67071
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1106712-2022",
+        "active": 1,
+        "last_month": "2026-03-01",
+        "complaint_sum": 1.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "191 FOOD CORP.",
+            "address": "1617 SAINT NICHOLAS AVE, NEW YORK NY 10040",
+            "borough": "Manhattan",
+            "contact_phone": "2125433008",
+            "license_number": "1473061-DCA",
+            "license_type": "Premises",
+            "license_status": "Ready for Renewal",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.929286,
+          40.85541
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1113135-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 2.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "AT&T MOBILITY SUPPLY, LLC",
+            "address": "1103 3RD AVE, NEW YORK NY 10065",
+            "borough": "Manhattan",
+            "contact_phone": "5616273365",
+            "license_number": "2046968-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "AT&T MOBILITY SUPPLY, LLC",
+            "address": "1103 3RD AVE, NEW YORK NY 10065",
+            "borough": "Manhattan",
+            "contact_phone": "5616273365",
+            "license_number": "2049674-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.964009,
+          40.76507
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1114355-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 3.0,
+        "license_records": [
+          {
+            "business_name": "A&M MOBILE INC",
+            "address": "3766 90TH ST, JACKSON HTS NY 11372",
+            "borough": "Queens",
+            "contact_phone": null,
+            "license_number": "2096043-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "A&M MOBILE INC",
+            "address": "3766 90TH ST, JACKSON HTS NY 11372",
+            "borough": "Queens",
+            "contact_phone": null,
+            "license_number": "2096196-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          },
+          {
+            "business_name": "A&M MOBILE INC",
+            "address": "3766 90TH ST, JACKSON HTS NY 11372",
+            "borough": "Queens",
+            "contact_phone": null,
+            "license_number": "2097534-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87664,
+          40.74922
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1117045-2022",
+        "active": 1,
+        "last_month": "2027-11-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "ANW DELI & FRUIT LLC",
+            "address": "9908 63RD RD, REGO PARK NY 11374",
+            "borough": "Queens",
+            "contact_phone": "7188300330",
+            "license_number": "2021162-2-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "ANW DELI & FRUIT LLC",
+            "address": "9908 63RD RD, REGO PARK NY 11374",
+            "borough": "Queens",
+            "contact_phone": "7188300330",
+            "license_number": "2074485-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.856476,
+          40.73258
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1118702-2022",
+        "active": 1,
+        "last_month": "2026-03-01",
+        "complaint_sum": 1.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "868 JUQUILA BAKERY AND DELI GROCERY CORP",
+            "address": "868 E 180TH ST, BRONX NY 10460",
+            "borough": "Bronx",
+            "contact_phone": "3476914539",
+            "license_number": "2108425-DCA",
+            "license_type": "Premises",
+            "license_status": "Ready for Renewal",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.883152,
+          40.84533
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1120509-2022",
+        "active": 0,
+        "last_month": "2023-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "ALPHERA INTERNATIONAL NA LLC",
+            "address": "7438 QUEENS BLVD, ELMHURST NY 11373",
+            "borough": "Queens",
+            "contact_phone": "643-334-5797",
+            "license_number": "2075811-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Secondhand Dealer - Auto"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.888359,
+          40.73884
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1120834-2022",
+        "active": 0,
+        "last_month": "2024-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "BROTHERHOOD GOURMET DELI CORP",
+            "address": "703 SOUTHERN BLVD, BRONX NY 10455",
+            "borough": "Bronx",
+            "contact_phone": "917-889-4500",
+            "license_number": "1346363-DCA",
+            "license_type": "Premises",
+            "license_status": "Revoked",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.899187,
+          40.81355
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1121711-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "BK WIRELESS, INC.",
+            "address": "1054 BEACH 20TH ST, FAR ROCKAWAY NY 11691",
+            "borough": "Queens",
+            "contact_phone": "7184713211",
+            "license_number": "1299321-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "BK WIRELESS, INC.",
+            "address": "1054 BEACH 20TH ST, FAR ROCKAWAY NY 11691",
+            "borough": "Queens",
+            "contact_phone": "7184713211",
+            "license_number": "1370781-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.753074,
+          40.60333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1123908-2022",
+        "active": 1,
+        "last_month": "2028-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "ALMATHRAHI, KAREEM M.",
+            "address": "666 WOODWARD AVE, RIDGEWOOD NY 11385",
+            "borough": "Queens",
+            "contact_phone": null,
+            "license_number": "2094459-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.906657,
+          40.70546
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1127339-2022",
+        "active": 1,
+        "last_month": "2027-11-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "BEST FRIENDS TIRES, INC.",
+            "address": "13819 HILLSIDE AVE, JAMAICA NY 11435",
+            "borough": "Queens",
+            "contact_phone": "718-526-1500",
+            "license_number": "1045795-DCA",
+            "license_type": "Premises",
+            "license_status": "Revoked",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "BEST FRIENDS TIRES, INC.",
+            "address": "13819 HILLSIDE AVE, JAMAICA NY 11435",
+            "borough": "Queens",
+            "contact_phone": "718-526-1500",
+            "license_number": "2073492-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.815825,
+          40.70415
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1129275-2022",
+        "active": 1,
+        "last_month": "2027-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "172 MINI MART INC",
+            "address": "17201 BAISLEY BLVD, JAMAICA NY 11434",
+            "borough": "Queens",
+            "contact_phone": "718-528-3583",
+            "license_number": "2078204-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.772019,
+          40.68176
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1130110-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 1.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "520 EAST GROCERY CORP.",
+            "address": "520 BROOK AVE, BRONX NY 10455",
+            "borough": "Bronx",
+            "contact_phone": "7184010058",
+            "license_number": "1249840-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.915215,
+          40.81447
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1130541-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "4369 WHITE PLAINS WIRELESS TOTAL CORP",
+            "address": "4369 WHITE PLAINS RD, BRONX NY 10466",
+            "borough": "Bronx",
+            "contact_phone": "6314823951",
+            "license_number": "2102173-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "4369 WHITE PLAINS WIRELESS TOTAL CORP",
+            "address": "4369 WHITE PLAINS RD, BRONX NY 10466",
+            "borough": "Bronx",
+            "contact_phone": "6314823951",
+            "license_number": "2103317-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.854977,
+          40.89761
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1179239-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "DARIUS DESIGN AND BUILD, LLC",
+            "address": "1345 AVENUE OF THE AMERICAS 2, NEW YORK NY 10105",
+            "borough": "Manhattan",
+            "contact_phone": "2019889688",
+            "license_number": "1292370-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          },
+          {
+            "business_name": "DARIUS DESIGN AND BUILD, LLC",
+            "address": "1345 AVENUE OF THE AMERICAS 2, NEW YORK NY 10105",
+            "borough": "Manhattan",
+            "contact_phone": "2019889688",
+            "license_number": "2129194-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97846,
+          40.7626
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1194833-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "CHIMBO AND HAGEN, INC.",
+            "address": "20651 46TH RD, FLUSHING NY 11361",
+            "borough": "Queens",
+            "contact_phone": "7183524938",
+            "license_number": "1416553-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.775256,
+          40.75568
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1194835-2022",
+        "active": 0,
+        "last_month": "2023-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "FAMILY DOLLAR STORES OF NEW YORK, INC. # 11160",
+            "address": "294 MACDOUGAL STREET, BROOKLYN NY 11233",
+            "borough": "Brooklyn",
+            "contact_phone": "7573215000",
+            "license_number": "2016635-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.908509,
+          40.68055
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1195103-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 3.0,
+        "license_records": [
+          {
+            "business_name": "GEM FINANCIAL SERVICES, INC.",
+            "address": "2199 WESTCHESTER AVE, BRONX NY 10462",
+            "borough": "Bronx",
+            "contact_phone": "7182371166",
+            "license_number": "1440390-DCA",
+            "license_type": "Premises",
+            "license_status": "Ready for Renewal",
+            "business_category": "Pawnbroker"
+          },
+          {
+            "business_name": "GEM FINANCIAL SERVICES, INC.",
+            "address": "2199 WESTCHESTER AVE, BRONX NY 10462",
+            "borough": "Bronx",
+            "contact_phone": "7182371166",
+            "license_number": "1440391-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          },
+          {
+            "business_name": "GEM FINANCIAL SERVICES, INC.",
+            "address": "2199 WESTCHESTER AVE, BRONX NY 10462",
+            "borough": "Bronx",
+            "contact_phone": "7182371166",
+            "license_number": "2105683-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.852029,
+          40.83417
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1199021-2022",
+        "active": 0,
+        "last_month": "2024-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "F & G FOOD MARKET NY CORP",
+            "address": "15502 107TH AVE, JAMAICA NY 11433",
+            "borough": "Queens",
+            "contact_phone": "7182974011",
+            "license_number": "2017662-2-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.79816,
+          40.6957
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1202073-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "CAGGIANO, JOE",
+            "address": "196 AVENUE U, BROOKLYN NY 11223",
+            "borough": "Brooklyn",
+            "contact_phone": "7187614094",
+            "license_number": "0833266-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.976911,
+          40.59657
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1204212-2022",
+        "active": 0,
+        "last_month": "2023-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "FGG CONTRACTING, INC.",
+            "address": "16420 86TH ST, HOWARD BEACH NY 11414",
+            "borough": "Queens",
+            "contact_phone": "7186414344",
+            "license_number": "2037117-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.844208,
+          40.64939
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1206452-2022",
+        "active": 0,
+        "last_month": "2023-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "GEM APPRAISERS' LABORATORY II, INC.",
+            "address": "589 5 AVENUE, NEW YORK NY 10017",
+            "borough": "Manhattan",
+            "contact_phone": "2123333122",
+            "license_number": "0923892-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97778,
+          40.75704
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1207548-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 2.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "CORPORATE CONCRETE CORP",
+            "address": "16430 HILLSIDE AVE 14K, JAMAICA NY 11432",
+            "borough": "Queens",
+            "contact_phone": "3473569938",
+            "license_number": "2097188-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.797827,
+          40.70912
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1210805-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "CZECH, ARTHUR",
+            "address": "240 CABRINI BLVD 6E, NEW YORK NY 10033",
+            "borough": "Manhattan",
+            "contact_phone": "9172923668",
+            "license_number": "1242519-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.938229,
+          40.85524
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1216760-2022",
+        "active": 1,
+        "last_month": "2027-01-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "EZ PROCESSING LLC",
+            "address": "1584 86 STREET, BROOKLYN NY 11228",
+            "borough": "Brooklyn",
+            "contact_phone": "7186215800",
+            "license_number": "1160770-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Debt Collection Agency"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.007628,
+          40.61026
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1223806-2022",
+        "active": 0,
+        "last_month": "2025-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "ETF MEDEQ INC",
+            "address": "23917 BRADDOCK AVE, BELLEROSE NY 11426",
+            "borough": "Queens",
+            "contact_phone": null,
+            "license_number": "2115902-DCWP",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Dealer In Products For The Disabled"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.728607,
+          40.72656
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1231499-2022",
+        "active": 0,
+        "last_month": "2023-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "F & Y CONVENIENCE STORE INC",
+            "address": "3104 36TH AVE, LONG ISLAND CITY NY 11106",
+            "borough": "Queens",
+            "contact_phone": "3474798296",
+            "license_number": "2066142-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "F & Y CONVENIENCE STORE INC",
+            "address": "3104 36TH AVE, LONG ISLAND CITY NY 11106",
+            "borough": "Queens",
+            "contact_phone": "3474798296",
+            "license_number": "2072933-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.929615,
+          40.75651
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1233365-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "CATALANO PLUMBING & HEATING, INC.",
+            "address": "2419 E TREMONT AVE 1, BRONX NY 10461",
+            "borough": "Bronx",
+            "contact_phone": "7189318200",
+            "license_number": "1144360-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.85269,
+          40.84255
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1241101-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "GEM FINANCIAL SERVICES, INC.",
+            "address": "754 ALLERTON AVE, BRONX NY 10467",
+            "borough": "Bronx",
+            "contact_phone": "7182371166",
+            "license_number": "0930815-DCA",
+            "license_type": "Premises",
+            "license_status": "Ready for Renewal",
+            "business_category": "Pawnbroker"
+          },
+          {
+            "business_name": "GEM FINANCIAL SERVICES, INC.",
+            "address": "754 ALLERTON AVE, BRONX NY 10467",
+            "borough": "Bronx",
+            "contact_phone": "7182371166",
+            "license_number": "1298014-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.865141,
+          40.86547
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1245766-2022",
+        "active": 0,
+        "last_month": "2023-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "CLOUD BEAST INC",
+            "address": "2205 35TH ST, ASTORIA NY 11105",
+            "borough": "Queens",
+            "contact_phone": "4073429650",
+            "license_number": "2066531-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "CLOUD BEAST INC",
+            "address": "2205 35TH ST, ASTORIA NY 11105",
+            "borough": "Queens",
+            "contact_phone": "4073429650",
+            "license_number": "2074037-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.908997,
+          40.77477
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1262995-2022",
+        "active": 1,
+        "last_month": "2026-05-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "C LEWIS GROUP LLC",
+            "address": "405 LEXINGTON AVE 9, NEW YORK NY 10174",
+            "borough": "Manhattan",
+            "contact_phone": "6466044024",
+            "license_number": "2033862-DCA",
+            "license_type": "Premises",
+            "license_status": "Ready for Renewal",
+            "business_category": "Employment Agency"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97576,
+          40.75182
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1277332-2022",
+        "active": 1,
+        "last_month": "2027-11-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "JASMINE MINI MART, INC.",
+            "address": "23207 MERRICK BLVD, LAURELTON NY 11413",
+            "borough": "Queens",
+            "contact_phone": "917-572-7677",
+            "license_number": "2057763-2-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "JASMINE MINI MART, INC.",
+            "address": "23207 MERRICK BLVD, LAURELTON NY 11413",
+            "borough": "Queens",
+            "contact_phone": "917-572-7677",
+            "license_number": "2074583-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.737508,
+          40.67513
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1283845-2022",
+        "active": 0,
+        "last_month": "2023-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "LOS TRES HERMANITOS DELI GROCERY CORP.",
+            "address": "654 MORRIS PARK AVE, BRONX NY 10462",
+            "borough": "Bronx",
+            "contact_phone": "718-430-1111",
+            "license_number": "1442077-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.867532,
+          40.84492
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1285291-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 1.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "LOS CASTILLOS MINI MARKET CORP",
+            "address": "1601 UNIVERSITY AVENUE, BRONX NY 10453",
+            "borough": "Bronx",
+            "contact_phone": "718-731-3412",
+            "license_number": "2053354-2-DCA",
+            "license_type": "Premises",
+            "license_status": "Suspended",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.920465,
+          40.84698
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1286285-2022",
+        "active": 0,
+        "last_month": "2025-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "JASE CONSTRUCTION CORP",
+            "address": "951 LORRAINE DR, FRANKLIN SQ NY 11010",
+            "borough": "Queens",
+            "contact_phone": "347-706-5659",
+            "license_number": "2100685-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84372,
+          40.66996
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1300126-2022",
+        "active": 0,
+        "last_month": "2024-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "HR WIRELESS LLC",
+            "address": "558 WEST 181 STREET, NEW YORK NY 10033",
+            "borough": "Manhattan",
+            "contact_phone": null,
+            "license_number": "2096692-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.932936,
+          40.84898
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1301223-2022",
+        "active": 0,
+        "last_month": "2025-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "JEFFKIM, L.L.C.",
+            "address": "208 W 29TH ST 1, NEW YORK NY 10001",
+            "borough": "Manhattan",
+            "contact_phone": "2122654559",
+            "license_number": "1212058-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9935,
+          40.7481
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1311089-2022",
+        "active": 0,
+        "last_month": "2023-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "GRACI, DOMINICK",
+            "address": "342 MASON BLVD, STATEN ISLAND NY 10309",
+            "borough": "Staten Island",
+            "contact_phone": "7189482394",
+            "license_number": "2021459-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.217714,
+          40.54312
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1313808-2022",
+        "active": 0,
+        "last_month": "2023-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "INDEPENDENT TONER CREW INC",
+            "address": "304 E 110TH ST 1, NEW YORK NY 10029",
+            "borough": "Manhattan",
+            "contact_phone": "212-987-2020",
+            "license_number": "2025982-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.940143,
+          40.793
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1320237-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Idea plus design contracting corp",
+            "address": "34 CARREAU AVE, STATEN ISLAND NY 10314",
+            "borough": "Staten Island",
+            "contact_phone": "6462583500",
+            "license_number": "2111115-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.16644,
+          40.60112
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1321516-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 1.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "KING OF BROADWAY FURNITURE INC",
+            "address": "1263 BROADWAY, BROOKLYN NY 11221",
+            "borough": "Brooklyn",
+            "contact_phone": "7184849222",
+            "license_number": "1434199-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.924952,
+          40.69116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1327261-2022",
+        "active": 0,
+        "last_month": "2023-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "HINCHA CONTRACTING CORP",
+            "address": "10410 37TH AVE, CORONA NY 11368",
+            "borough": "Queens",
+            "contact_phone": "7187515410",
+            "license_number": "2103240-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86344,
+          40.75352
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1327988-2022",
+        "active": 1,
+        "last_month": "2028-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "JL PLUM TREE LLC",
+            "address": "1156 FLATBUSH AVENUE GROUND, BROOKLYN NY 11226",
+            "borough": "Brooklyn",
+            "contact_phone": "(917) 939-9888",
+            "license_number": "2087857-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.957257,
+          40.64214
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1328137-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "HILLSIDE ELECTRONICS INC",
+            "address": "16847 HILLSIDE AVE 1, JAMAICA NY 11432",
+            "borough": "Queens",
+            "contact_phone": "3475925266",
+            "license_number": "2006758-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "HILLSIDE ELECTRONICS INC",
+            "address": "16847 HILLSIDE AVE 1, JAMAICA NY 11432",
+            "borough": "Queens",
+            "contact_phone": "3475925266",
+            "license_number": "2007338-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.793617,
+          40.71048
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1329226-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "HSYW INC.",
+            "address": "14952 14TH AVE, WHITESTONE NY 11357",
+            "borough": "Queens",
+            "contact_phone": "917-607-7785",
+            "license_number": "2088327-2-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "HSYW INC.",
+            "address": "14952 14TH AVE, WHITESTONE NY 11357",
+            "borough": "Queens",
+            "contact_phone": "917-607-7785",
+            "license_number": "2088328-2-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.814913,
+          40.78856
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1329576-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "KENTAUROS CONTRACTING CORPORATION",
+            "address": "25133 VAN ZANDT AVE, LITTLE NECK NY 11362",
+            "borough": "Queens",
+            "contact_phone": "9175673857",
+            "license_number": "1453783-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.732073,
+          40.76545
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1330089-2022",
+        "active": 1,
+        "last_month": "2028-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "LIBERTY PRODUCE, INC.",
+            "address": "12716 111TH AVE, S OZONE PARK NY 11420",
+            "borough": "Queens",
+            "contact_phone": "7185291717",
+            "license_number": "1460055-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.81406,
+          40.68257
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1330557-2022",
+        "active": 1,
+        "last_month": "2028-03-01",
+        "complaint_sum": 1.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "LITTLE RANCHO MINI MARKET LLC",
+            "address": "16915 JAMAICA AVE, JAMAICA NY 11432",
+            "borough": "Queens",
+            "contact_phone": "3478293949",
+            "license_number": "2126353-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.79054,
+          40.70695
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1335126-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "HALEY, WINSTON",
+            "address": "14715 226TH ST, SPRNGFLD GDNS NY 11413",
+            "borough": "Queens",
+            "contact_phone": "3472004412",
+            "license_number": "2096893-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.755894,
+          40.65842
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1358559-2022",
+        "active": 0,
+        "last_month": "2022-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "JAMAN, ABDULLAH A & AMIN, JAY",
+            "address": "1231 WHITE PLAINS RD, BRONX NY 10472",
+            "borough": "Bronx",
+            "contact_phone": null,
+            "license_number": "2086910-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.862052,
+          40.83144
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1390526-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "MENDOLA, VINCENT",
+            "address": "1913 EDISON AVE, BRONX NY 10461",
+            "borough": "Bronx",
+            "contact_phone": "7184093006",
+            "license_number": "0782785-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.832175,
+          40.8498
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1394684-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "NEW PRIME GENERAL CONSTRUCTION CORP.",
+            "address": "2530 LURTING AVE 1, BRONX NY 10469",
+            "borough": "Bronx",
+            "contact_phone": "7186541048",
+            "license_number": "1237998-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.85684,
+          40.86364
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1407975-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "R & G AUTO REPAIR, INC.",
+            "address": "12702 ATLANTIC AVE, SOUTH RICHMOND HILL NY 11419",
+            "borough": "Queens",
+            "contact_phone": "7188504552",
+            "license_number": "1012591-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.820969,
+          40.69585
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1409059-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 2.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "MYRIAD CONSTRUCTION SERVICES, INC.",
+            "address": "790 MADISON AVE 401, NEW YORK NY 10065",
+            "borough": "Manhattan",
+            "contact_phone": "2124720004",
+            "license_number": "1218853-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96787,
+          40.76846
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1410816-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "NYS BUILDERS INC.",
+            "address": "6830 ALDERTON ST, REGO PARK NY 11374",
+            "borough": "Queens",
+            "contact_phone": "9175536151",
+            "license_number": "1248706-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.858549,
+          40.71473
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1412862-2022",
+        "active": 1,
+        "last_month": "2027-11-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "OXFORD 3 DELI GROCERY CORP",
+            "address": "2024 2ND AVE, NEW YORK NY 10029",
+            "borough": "Manhattan",
+            "contact_phone": "9174424992",
+            "license_number": "2051637-2-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "OXFORD 3 DELI GROCERY CORP",
+            "address": "2024 2ND AVE, NEW YORK NY 10029",
+            "borough": "Manhattan",
+            "contact_phone": "9174424992",
+            "license_number": "2071780-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.943332,
+          40.78938
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1415041-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "PUR VAPE AND SMOKE INC.",
+            "address": "346 9TH AVE, NEW YORK NY 10001",
+            "borough": "Manhattan",
+            "contact_phone": "917-723-7571",
+            "license_number": "2030135-2-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "PUR VAPE AND SMOKE INC.",
+            "address": "346 9TH AVE, NEW YORK NY 10001",
+            "borough": "Manhattan",
+            "contact_phone": "917-723-7571",
+            "license_number": "2067100-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.998257,
+          40.7507
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1415668-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "NEW YORK AUTO SPRING CORP",
+            "address": "4140 BOSTON RD, BRONX NY 10475",
+            "borough": "Bronx",
+            "contact_phone": "7183240745",
+            "license_number": "1005240-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.826571,
+          40.88649
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1418461-2022",
+        "active": 0,
+        "last_month": "2023-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "PARAM CONSTRUCTION CORP",
+            "address": "12327 135TH ST, SOUTH OZONE PARK NY 11420",
+            "borough": "Queens",
+            "contact_phone": "3476517165",
+            "license_number": "2091712-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.803585,
+          40.67421
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1423384-2022",
+        "active": 0,
+        "last_month": "2023-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "R & Z HEATING AND AIR CONDITIONING CORP.",
+            "address": "8940 212TH PL, QUEENS VILLAGE NY 11427",
+            "borough": "Queens",
+            "contact_phone": "3476131919",
+            "license_number": "2084210-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.750902,
+          40.7231
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1434858-2022",
+        "active": 1,
+        "last_month": "2027-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "PAGE BAGELS INC",
+            "address": "6959 AMBOY RD, STATEN ISLAND NY 10309",
+            "borough": "Staten Island",
+            "contact_phone": "7189847052",
+            "license_number": "2042794-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          },
+          {
+            "business_name": "PAGE BAGELS INC",
+            "address": "6959 AMBOY RD, STATEN ISLAND NY 10309",
+            "borough": "Staten Island",
+            "contact_phone": "7189847052",
+            "license_number": "2075641-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.232586,
+          40.51659
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1437177-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "QIYI MOBILE 1 INC",
+            "address": "4618 8 AVENUE, BROOKLYN NY 11220",
+            "borough": "Brooklyn",
+            "contact_phone": "6468619855",
+            "license_number": "2069603-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.001549,
+          40.64321
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1443208-2022",
+        "active": 0,
+        "last_month": "2023-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Medica Mente Supply Corp",
+            "address": "2579 EAST 17 STREET 3, BROOKLYN NY 11235",
+            "borough": "Brooklyn",
+            "contact_phone": "9173273009",
+            "license_number": "2105466-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Dealer In Products For The Disabled"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.952525,
+          40.5886
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1459612-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "PRIME JEWELER LLC",
+            "address": "9104 JAMAICA AVE, WOODHAVEN NY 11421",
+            "borough": "Queens",
+            "contact_phone": "7184413416",
+            "license_number": "1269476-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.853727,
+          40.69308
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1461645-2022",
+        "active": 0,
+        "last_month": "2023-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "OLIANTHA GARAGE CORP.",
+            "address": "102 W 107TH ST, NEW YORK NY 10025",
+            "borough": "Manhattan",
+            "contact_phone": "9177838974",
+            "license_number": "0928832-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Garage & Parking Lot"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.962848,
+          40.8001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1470863-2022",
+        "active": 0,
+        "last_month": "2024-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "NEW PARISIENNE 501 DELI & GROCERY INC.",
+            "address": "501 COLUMBUS AVE, NEW YORK NY 10024",
+            "borough": "Manhattan",
+            "contact_phone": "212-496-8720",
+            "license_number": "2035804-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Stoop Line Stand"
+          },
+          {
+            "business_name": "NEW PARISIENNE 501 DELI & GROCERY INC.",
+            "address": "501 COLUMBUS AVE, NEW YORK NY 10024",
+            "borough": "Manhattan",
+            "contact_phone": "212-496-8720",
+            "license_number": "2041397-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.973018,
+          40.78531
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1483080-2022",
+        "active": 0,
+        "last_month": "2023-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "TOP YARD BUILDERS, LTD.",
+            "address": "3530 CORSA AVE 2, BRONX NY 10469",
+            "borough": "Bronx",
+            "contact_phone": "9173271415",
+            "license_number": "2046431-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.848195,
+          40.87842
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1485014-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "S&B TRUCKING LLC",
+            "address": "14143 254TH ST, ROSEDALE NY 11422",
+            "borough": "Queens",
+            "contact_phone": "7185066517",
+            "license_number": "1191198-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.731693,
+          40.66
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1505593-2022",
+        "active": 0,
+        "last_month": "2023-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "RENT-A-CENTER EAST, INC.",
+            "address": "1027 BEACH 20TH ST, FAR ROCKAWAY NY 11691",
+            "borough": "Queens",
+            "contact_phone": "469-802-3806",
+            "license_number": "1109743-DCA",
+            "license_type": "Premises",
+            "license_status": "Out of Business",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "RENT-A-CENTER EAST, INC.",
+            "address": "1027 BEACH 20TH ST, FAR ROCKAWAY NY 11691",
+            "borough": "Queens",
+            "contact_phone": "469-802-3806",
+            "license_number": "1119008-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.753198,
+          40.60294
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1509337-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "SAND PAPER CONSTRUCTION INC.",
+            "address": "41 KENMARE ST 26, NEW YORK NY 10012",
+            "borough": "Manhattan",
+            "contact_phone": "6468310681",
+            "license_number": "1452366-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.995379,
+          40.72077
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1516612-2022",
+        "active": 0,
+        "last_month": "2023-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "SUNRISE DELI & GROCERY 1 CORP",
+            "address": "1977 HUGHES AVE, BRONX NY 10457",
+            "borough": "Bronx",
+            "contact_phone": "347-286-9216",
+            "license_number": "2078651-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89194,
+          40.84649
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1517586-2022",
+        "active": 0,
+        "last_month": "2025-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "TREND MED INC.",
+            "address": "9236 QUEENS BLVD, REGO PARK NY 11374",
+            "borough": "Queens",
+            "contact_phone": "3472004833",
+            "license_number": "2085696-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Dealer In Products For The Disabled"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.867665,
+          40.73239
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1524611-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 3.0,
+        "license_records": [
+          {
+            "business_name": "WIRELESS WORLD BRONX INC.",
+            "address": "258 WILLIS AVE, BRONX NY 10454",
+            "borough": "Bronx",
+            "contact_phone": "7184014449",
+            "license_number": "1217280-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "WIRELESS WORLD BRONX INC.",
+            "address": "258 WILLIS AVE, BRONX NY 10454",
+            "borough": "Bronx",
+            "contact_phone": "7184014449",
+            "license_number": "1243954-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          },
+          {
+            "business_name": "WIRELESS WORLD BRONX INC.",
+            "address": "258 WILLIS AVE, BRONX NY 10454",
+            "borough": "Bronx",
+            "contact_phone": "7184014449",
+            "license_number": "1243964-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.922655,
+          40.80941
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1527691-2022",
+        "active": 0,
+        "last_month": "2023-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "THE CAR PARK OF NEW YORK LLC",
+            "address": "8020 COOPER AVE, GLENDALE NY 11385",
+            "borough": "Queens",
+            "contact_phone": "208-336-6597",
+            "license_number": "2060722-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Garage & Parking Lot"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.869229,
+          40.70957
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1528526-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "TIDYUPNYC, LLC",
+            "address": "474 48TH AVE 8C, LONG ISLAND CITY NY 11109",
+            "borough": "Queens",
+            "contact_phone": "(718) 770-7950",
+            "license_number": "1381740-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.956448,
+          40.74458
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1532577-2022",
+        "active": 1,
+        "last_month": "2027-11-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Sam New York Inc",
+            "address": "3118 36TH AVE, ASTORIA NY 11106",
+            "borough": "Queens",
+            "contact_phone": "7183920017",
+            "license_number": "2071760-1-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic Cigarette Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.929535,
+          40.75647
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1536407-2022",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "SUBJECT TO CHANGE INC.",
+            "address": "157 NORTH 6 STREET, BROOKLYN NY 11211",
+            "borough": "Brooklyn",
+            "contact_phone": "6463610261",
+            "license_number": "2072169-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.957999,
+          40.71709
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1542434-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "RENAISSANCE PAINTING INC.",
+            "address": "5648 DELAFIELD AVE, BRONX NY 10471",
+            "borough": "Bronx",
+            "contact_phone": "9146180365",
+            "license_number": "1323458-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.903627,
+          40.90522
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1542679-2022",
+        "active": 0,
+        "last_month": "2024-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "SWITCH WIRELESS INC.",
+            "address": "128 E 116TH ST, NEW YORK NY 10029",
+            "borough": "Manhattan",
+            "contact_phone": "3473027131",
+            "license_number": "2108289-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.942157,
+          40.79884
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1547199-2022",
+        "active": 0,
+        "last_month": "2024-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "SORIANO, RUFINO",
+            "address": "1510 WATSON AVE, BRONX NY 10472",
+            "borough": "Bronx",
+            "contact_phone": "7186841370",
+            "license_number": "2070793-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          },
+          {
+            "business_name": "SORIANO, RUFINO",
+            "address": "1510 WATSON AVE, BRONX NY 10472",
+            "borough": "Bronx",
+            "contact_phone": "7186841370",
+            "license_number": "2108199-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.878998,
+          40.82596
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1555084-2022",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "UNITED BOOMING FLOOR & CABINET, INC.",
+            "address": "4158 COLLEGE POINT BLVD, FLUSHING NY 11355",
+            "borough": "Queens",
+            "contact_phone": "(718) 353-5989",
+            "license_number": "1268480-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.833284,
+          40.75516
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1555644-2022",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "SANCHEZ FAMILY DELI GROCERY CORP.",
+            "address": "703 PROSPECT AVE, BRONX NY 10455",
+            "borough": "Bronx",
+            "contact_phone": "718-993-2543",
+            "license_number": "1455968-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.903041,
+          40.81624
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1556551-2022",
+        "active": 0,
+        "last_month": "2024-06-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "WEFIXMAX CORP",
+            "address": "1571 SAINT NICHOLAS AVE, NEW YORK NY 10040",
+            "borough": "Manhattan",
+            "contact_phone": "9082201383",
+            "license_number": "2104352-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          },
+          {
+            "business_name": "WEFIXMAX CORP",
+            "address": "1571 SAINT NICHOLAS AVE, NEW YORK NY 10040",
+            "borough": "Manhattan",
+            "contact_phone": "9082201383",
+            "license_number": "2106167-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.930303,
+          40.85403
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1557357-2022",
+        "active": 0,
+        "last_month": "2023-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "TITAN EQUIPMENT INC",
+            "address": "9503 104TH ST, OZONE PARK NY 11416",
+            "borough": "Queens",
+            "contact_phone": null,
+            "license_number": "2100916-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Dealer In Products For The Disabled"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.840365,
+          40.68892
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1557968-2022",
+        "active": 0,
+        "last_month": "2023-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "RJN BROADWAY INC",
+            "address": "4503 BROADWAY, ASTORIA NY 11103",
+            "borough": "Queens",
+            "contact_phone": "9293491250",
+            "license_number": "2082747-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.914869,
+          40.75704
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1561664-2022",
+        "active": 1,
+        "last_month": "2026-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "SOUTHERN BLVD FARM CORP.",
+            "address": "1700 SOUTHERN BLVD, BRONX NY 10460",
+            "borough": "Bronx",
+            "contact_phone": "6465678613",
+            "license_number": "2029259-DCA",
+            "license_type": "Premises",
+            "license_status": "Ready for Renewal",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.888441,
+          40.83622
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1567767-2023",
+        "active": 0,
+        "last_month": "2024-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 2.0,
+        "license_records": [
+          {
+            "business_name": "6 WIRELESS INC",
+            "address": "6 EAST 167 STREET, BRONX NY 10452",
+            "borough": "Bronx",
+            "contact_phone": "3478797851",
+            "license_number": "2110795-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "6 WIRELESS INC",
+            "address": "6 EAST 167 STREET, BRONX NY 10452",
+            "borough": "Bronx",
+            "contact_phone": "3478797851",
+            "license_number": "2110993-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.922122,
+          40.83601
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1568745-2023",
+        "active": 1,
+        "last_month": "2026-12-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "COLUMBUS EIGHTY FIRST LLC",
+            "address": "NEC COLUMBUS AVENUE, NEW YORK NY 10024",
+            "borough": "Manhattan",
+            "contact_phone": "(347) 666-7767",
+            "license_number": "1049652-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Tobacco Retail Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.974539,
+          40.78324
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1572378-2023",
+        "active": 0,
+        "last_month": "2023-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "HUDSON COLISION AND AUTO REPAIR SHOP INC",
+            "address": "5709 37TH AVE, WOODSIDE NY 11377",
+            "borough": "Queens",
+            "contact_phone": "7182053591",
+            "license_number": "2110527-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.905035,
+          40.75035
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1573806-2023",
+        "active": 0,
+        "last_month": "2023-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Q PHARMACY RX INC",
+            "address": "8236 LEFFERTS BLVD, KEW GARDENS NY 11415",
+            "borough": "Queens",
+            "contact_phone": "9294678029",
+            "license_number": "2110757-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Dealer In Products For The Disabled"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.831763,
+          40.70684
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1578680-2023",
+        "active": 1,
+        "last_month": "2026-06-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Express Repair LLC",
+            "address": "509 HALSEY ST, BROOKLYN NY 11233",
+            "borough": "Brooklyn",
+            "contact_phone": "3475714257",
+            "license_number": "2111760-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.932778,
+          40.68378
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1583695-2023",
+        "active": 0,
+        "last_month": "2023-11-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Citi Pedicab Inc.",
+            "address": "4120 40TH ST 2R, SUNNYSIDE NY 11104",
+            "borough": "Queens",
+            "contact_phone": "718-905-0725",
+            "license_number": "2114340-DCA",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Pedicab Business"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.923648,
+          40.74694
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1583873-2023",
+        "active": 0,
+        "last_month": "2025-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "EXPRESS SUPPLY 8 INC.",
+            "address": "5919 GRAND AVE, MASPETH NY 11378",
+            "borough": "Queens",
+            "contact_phone": "3478480338",
+            "license_number": "2112083-DCA",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Dealer In Products For The Disabled"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.907383,
+          40.72079
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1661921-2023",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Proedge Contracting Corp.",
+            "address": "9504 32ND AVE, EAST ELMHURST NY 11369",
+            "borough": "Queens",
+            "contact_phone": "3479656387",
+            "license_number": "2116281-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.873284,
+          40.7587
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1672752-2023",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "Kena Construction Corp.",
+            "address": "12836 150TH ST, JAMAICA NY 11436",
+            "borough": "Queens",
+            "contact_phone": "6468539328",
+            "license_number": "2117690-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.788548,
+          40.67107
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1678032-2023",
+        "active": 1,
+        "last_month": "2028-03-01",
+        "complaint_sum": 1.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "CUNA DE AZUCAR INC.",
+            "address": "3912 104TH ST, CORONA NY 11368",
+            "borough": "Queens",
+            "contact_phone": "(929) 326-2643",
+            "license_number": "2117703-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86206,
+          40.75055
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1692062-2024",
+        "active": 0,
+        "last_month": "2025-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "GLOSS BK INC",
+            "address": "2711 E 65th St 2, Brooklyn NY 11234",
+            "borough": "Brooklyn",
+            "contact_phone": "5163888228",
+            "license_number": "2120677-DCWP",
+            "license_type": "Premises",
+            "license_status": "Expired",
+            "business_category": "Dealer In Products For The Disabled"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.912043,
+          40.6063
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1693761-2024",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 1.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "JC NY RESTORATION INC",
+            "address": "550 W 125TH ST 13H, NEW YORK NY 10027",
+            "borough": "Manhattan",
+            "contact_phone": "6463200755",
+            "license_number": "2129340-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.957147,
+          40.81436
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1703649-2024",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 3.0,
+        "license_records": [
+          {
+            "business_name": "Twitch Wireless Corp",
+            "address": "5547 BROADWAY, BRONX NY 10463",
+            "borough": "Bronx",
+            "contact_phone": "5704019022",
+            "license_number": "2123077-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronics Store"
+          },
+          {
+            "business_name": "Twitch Wireless Corp",
+            "address": "5547 BROADWAY, BRONX NY 10463",
+            "borough": "Bronx",
+            "contact_phone": "5704019022",
+            "license_number": "2124673-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Electronic & Home Appliance Service Dealer"
+          },
+          {
+            "business_name": "Twitch Wireless Corp",
+            "address": "5547 BROADWAY, BRONX NY 10463",
+            "borough": "Bronx",
+            "contact_phone": "5704019022",
+            "license_number": "2125481-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.905355,
+          40.87814
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1704021-2024",
+        "active": 1,
+        "last_month": "2026-04-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "RITE AWAY TOWING AND RECOVERY LLC",
+            "address": "5328 35TH ST, LONG ISLAND CITY NY 11101",
+            "borough": "Queens",
+            "contact_phone": "9073610493",
+            "license_number": "2123556-DCWP",
+            "license_type": "Premises",
+            "license_status": "Ready for Renewal",
+            "business_category": "Tow Truck Company"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.937532,
+          40.73534
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1706983-2024",
+        "active": 1,
+        "last_month": "2027-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "LEAF ONE SUPPLY INC",
+            "address": "9609 SPRINGFIELD BLVD 201, QUEENS VILLAGE NY 11429",
+            "borough": "Queens",
+            "contact_phone": "(347) 766-4247",
+            "license_number": "2123823-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Dealer In Products For The Disabled"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.735286,
+          40.7183
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1711907-2024",
+        "active": 1,
+        "last_month": "2026-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "EL MEXICANO MEAT MARKET CORP.",
+            "address": "1488 WESTCHESTER AVE, BRONX NY 10472",
+            "borough": "Bronx",
+            "contact_phone": "(347) 327-0002",
+            "license_number": "2124897-DCWP",
+            "license_type": "Premises",
+            "license_status": "Surrendered",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.880616,
+          40.82846
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1716453-2024",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "INTEGRITY BRONX S LLC",
+            "address": "3505 CONNER ST, BRONX NY 10475",
+            "borough": "Bronx",
+            "contact_phone": "6312602231",
+            "license_number": "2127528-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - Auto"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.82689,
+          40.88486
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1731791-2025",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "R & R TIRES SHOP LLC",
+            "address": "5326 VAN DAM ST, LONG ISLAND CITY NY 11101",
+            "borough": "Queens",
+            "contact_phone": "3479729494",
+            "license_number": "2129558-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.937326,
+          40.73516
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1736782-2025",
+        "active": 1,
+        "last_month": "2026-09-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "JING JING HOTEL MANAGEMENT, LLC",
+            "address": "3118 LINDEN PL, FLUSHING NY 11354",
+            "borough": "Queens",
+            "contact_phone": "6463307866",
+            "license_number": "2129601-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Hotel"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.83239,
+          40.76892
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1736997-2025",
+        "active": 1,
+        "last_month": "2026-09-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "IC HOTEL LLC",
+            "address": "135 32ND ST, BROOKLYN NY 11232",
+            "borough": "Brooklyn",
+            "contact_phone": "(347) 651-0149",
+            "license_number": "2129635-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Hotel"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.002984,
+          40.6571
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1737513-2025",
+        "active": 1,
+        "last_month": "2026-09-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "JMD 346 INC.",
+            "address": "346 GRAND CONCOURSE, BRONX NY 10451",
+            "borough": "Bronx",
+            "contact_phone": "(917) 939-9667",
+            "license_number": "2129712-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Hotel"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.928674,
+          40.81532
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1740696-2025",
+        "active": 1,
+        "last_month": "2027-07-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "MARTINEZ FAMILY TIRE SHOP CORP",
+            "address": "6945 51ST AVE, WOODSIDE NY 11377",
+            "borough": "Queens",
+            "contact_phone": "3476927893",
+            "license_number": "2104612-DCA",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Secondhand Dealer - General"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.894805,
+          40.73545
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1749418-2025",
+        "active": 1,
+        "last_month": "2027-02-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "RIPI CONSTRUCTION LLC",
+            "address": "2431 EASTCHESTER RD, BRONX NY 10469",
+            "borough": "Bronx",
+            "contact_phone": "9147072482",
+            "license_number": "2132401-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Home Improvement Contractor"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.843295,
+          40.86158
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "business_id": "BA-1750572-2025",
+        "active": 1,
+        "last_month": "2028-03-01",
+        "complaint_sum": 0.0,
+        "license_count": 1.0,
+        "license_records": [
+          {
+            "business_name": "KE NATURAL FLOWERS Inc.",
+            "address": "18740A HILLSIDE AVE, JAMAICA NY 11432",
+            "borough": "Queens",
+            "contact_phone": "9173538678",
+            "license_number": "2132201-DCWP",
+            "license_type": "Premises",
+            "license_status": "Active",
+            "business_category": "Stoop Line Stand"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.774218,
+          40.71495
+        ]
+      }
+    }
+  ]
+}

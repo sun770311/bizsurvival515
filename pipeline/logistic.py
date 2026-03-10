@@ -15,11 +15,12 @@ Outputs:
 - Saved retained and dropped feature columns
 - Saved coefficient summary CSV
 - Saved balanced dataset and train/test splits
-- Saved evaluation metrics CSV
+- Saved evaluation metrics JSON
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import pickle
 from dataclasses import dataclass
@@ -571,13 +572,79 @@ def run_logistic_pipeline(config: LogisticConfig) -> dict[str, object]:
     }
 
 
+def parse_args() -> LogisticConfig:
+    """Parse CLI arguments into a LogisticConfig."""
+    parser = argparse.ArgumentParser(
+        description="Train logistic regression model for 3-year business survival."
+    )
+    parser.add_argument(
+        "--data",
+        type=Path,
+        required=True,
+        help="Path to joined_dataset.csv",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="Directory to save logistic model artifacts",
+    )
+    parser.add_argument(
+        "--study-end",
+        type=str,
+        default=str(STUDY_END.date()),
+        help="Study end date in YYYY-MM-DD format",
+    )
+    parser.add_argument(
+        "--survival-months",
+        type=int,
+        default=SURVIVAL_MONTHS,
+        help="Survival horizon in months",
+    )
+    parser.add_argument(
+        "--variance-threshold",
+        type=float,
+        default=VARIANCE_THRESHOLD,
+        help="Variance threshold for feature filtering",
+    )
+    parser.add_argument(
+        "--test-size",
+        type=float,
+        default=TEST_SIZE,
+        help="Test split fraction",
+    )
+    parser.add_argument(
+        "--random-state",
+        type=int,
+        default=RANDOM_STATE,
+        help="Random seed",
+    )
+    parser.add_argument(
+        "--max-iter",
+        type=int,
+        default=MAX_ITER,
+        help="Maximum logistic regression iterations",
+    )
+
+    args = parser.parse_args()
+
+    return LogisticConfig(
+        data_path=args.data,
+        output_dir=args.output_dir,
+        study_end=pd.Timestamp(args.study_end),
+        survival_months=args.survival_months,
+        variance_threshold=args.variance_threshold,
+        test_size=args.test_size,
+        random_state=args.random_state,
+        max_iter=args.max_iter,
+    )
+
+
 def main() -> None:
     """Entry point for script execution."""
-    config = LogisticConfig(
-        data_path=Path("/content/drive/MyDrive/joined_dataset.csv"),
-        output_dir=Path("/content/drive/MyDrive/logreg_survival_outputs"),
-    )
-    run_logistic_pipeline(config)
+    config = parse_args()
+    summary = run_logistic_pipeline(config)
+    print(json.dumps(summary, indent=2))
 
 
 if __name__ == "__main__":

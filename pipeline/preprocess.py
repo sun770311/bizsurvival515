@@ -1,9 +1,8 @@
-"""
-Preprocess NYC business license and 311 data into a monthly panel dataset.
+"""Preprocess NYC business license and 311 data into a monthly panel dataset.
 
 Input (raw CSVs from NYC Open Data):
 - licenses.csv
-- service_reqs.csv 
+- service_reqs_sample.csv or service_reqs.csv
 
 Processing steps:
 - Clean and standardize records
@@ -18,6 +17,7 @@ Output:
 
 from __future__ import annotations
 
+import argparse
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -47,18 +47,7 @@ class PipelineConfig:
 
 
 def sanitize_feature_name(raw_name: str, prefix: str) -> str:
-    """Convert a raw category/complaint label into a safe column name.
-
-    Parameters:
-    raw_name
-        Original human-readable label from the source data.
-    prefix
-        Prefix to prepend, such as ``business_category`` or ``complaint_type``.
-
-    Returns:
-    str
-        Safe, human-readable column name.
-    """
+    """Convert a raw category/complaint label into a safe column name."""
     cleaned = str(raw_name).strip().lower()
     cleaned = cleaned.replace("&", " and ")
     cleaned = re.sub(r"['’]", "", cleaned)
@@ -183,6 +172,7 @@ def clean_service_requests(service_reqs: pd.DataFrame) -> pd.DataFrame:
     cleaned["Unique Key"] = cleaned["Unique Key"].replace(
         {"": pd.NA, "nan": pd.NA, "None": pd.NA}
     )
+
     cleaned["Problem (formerly Complaint Type)"] = (
         cleaned["Problem (formerly Complaint Type)"].astype(str).str.strip()
     )
@@ -191,6 +181,7 @@ def clean_service_requests(service_reqs: pd.DataFrame) -> pd.DataFrame:
             {"": pd.NA, "nan": pd.NA, "None": pd.NA}
         )
     )
+
     cleaned["Created Date"] = pd.to_datetime(
         cleaned["Created Date"],
         format="%m/%d/%Y %I:%M:%S %p",
@@ -635,14 +626,59 @@ def run_pipeline(config: PipelineConfig) -> Path:
     return save_joined_dataset(joined, config.output_path)
 
 
+def parse_args() -> PipelineConfig:
+    """Parse command-line arguments into a PipelineConfig."""
+    parser = argparse.ArgumentParser(
+        description="Build joined NYC business + 311 monthly panel dataset."
+    )
+    parser.add_argument(
+        "--licenses",
+        type=Path,
+        required=True,
+        help="Path to licenses.csv",
+    )
+    parser.add_argument(
+        "--service-reqs",
+        type=Path,
+        required=True,
+        help="Path to service_reqs.csv or service_reqs_sample.csv",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Path to write joined_dataset.csv",
+    )
+    parser.add_argument(
+        "--location-k",
+        type=int,
+        default=LOCATION_K,
+        help="Number of KMeans location clusters",
+    )
+    parser.add_argument(
+        "--radius-meters",
+        type=float,
+        default=RADIUS_METERS,
+        help="Radius in meters for joining 311 requests to nearby businesses",
+    )
+
+    args = parser.parse_args()
+    radius_radians = args.radius_meters / EARTH_RADIUS_METERS
+
+    return PipelineConfig(
+        licenses_path=args.licenses,
+        service_reqs_path=args.service_reqs,
+        output_path=args.output,
+        location_k=args.location_k,
+        radius_radians=radius_radians,
+    )
+
+
 def main() -> None:
     """Entry point for script execution."""
-    config = PipelineConfig(
-        licenses_path=Path("/content/drive/MyDrive/licenses.csv"),
-        service_reqs_path=Path("/content/drive/MyDrive/service_reqs.csv"),
-        output_path=Path("/content/drive/MyDrive/joined_dataset.csv"),
-    )
-    run_pipeline(config)
+    config = parse_args()
+    output_path = run_pipeline(config)
+    print(f"Saved joined dataset to {output_path}")
 
 
 if __name__ == "__main__":

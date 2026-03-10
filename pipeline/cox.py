@@ -18,6 +18,8 @@ Outputs:
 
 from __future__ import annotations
 
+import argparse
+import json
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
@@ -285,7 +287,7 @@ def fit_time_varying_cox_model(
         event_col="event",
         start_col="start",
         stop_col="stop",
-        show_progress=False,
+        show_progress=True,
     )
     return model
 
@@ -302,7 +304,7 @@ def fit_standard_cox_model(
         fit_df,
         duration_col="duration_months",
         event_col="event",
-        show_progress=False,
+        show_progress=True,
     )
     return model
 
@@ -338,11 +340,8 @@ def save_time_varying_artifacts(
     output_dir.mkdir(parents=True, exist_ok=True)
     summary = build_coefficient_summary(model)
 
-    artifact_paths = {
-        "model": save_pickle_artifact(
-            model,
-            output_dir / "cox_time_varying_model.pkl",
-        ),
+    return {
+        "model": save_pickle_artifact(model, output_dir / "cox_time_varying_model.pkl"),
         "scaler": save_pickle_artifact(
             prepared_data.scaler,
             output_dir / "cox_time_varying_scaler.pkl",
@@ -360,7 +359,6 @@ def save_time_varying_artifacts(
             output_dir / "cox_time_varying_summary.csv",
         ),
     }
-    return artifact_paths
 
 
 def save_standard_cox_artifacts(
@@ -372,11 +370,8 @@ def save_standard_cox_artifacts(
     output_dir.mkdir(parents=True, exist_ok=True)
     summary = build_coefficient_summary(model)
 
-    artifact_paths = {
-        "model": save_pickle_artifact(
-            model,
-            output_dir / "coxph_model.pkl",
-        ),
+    return {
+        "model": save_pickle_artifact(model, output_dir / "coxph_model.pkl"),
         "scaler": save_pickle_artifact(
             prepared_data.scaler,
             output_dir / "coxph_scaler.pkl",
@@ -389,12 +384,8 @@ def save_standard_cox_artifacts(
             prepared_data.feature_selection.dropped_columns,
             output_dir / "coxph_dropped_columns.pkl",
         ),
-        "summary": save_dataframe_artifact(
-            summary,
-            output_dir / "coxph_summary.csv",
-        ),
+        "summary": save_dataframe_artifact(summary, output_dir / "coxph_summary.csv"),
     }
-    return artifact_paths
 
 
 def run_time_varying_pipeline(config: CoxConfig) -> dict[str, object]:
@@ -428,7 +419,7 @@ def run_time_varying_pipeline(config: CoxConfig) -> dict[str, object]:
         "n_businesses": int(panel["business_id"].nunique()),
         "kept_columns": prepared_data.feature_selection.kept_columns,
         "dropped_columns": prepared_data.feature_selection.dropped_columns,
-        "artifact_paths": artifact_paths,
+        "artifact_paths": {k: str(v) for k, v in artifact_paths.items()},
     }
 
 
@@ -463,7 +454,7 @@ def run_standard_cox_pipeline(config: CoxConfig) -> dict[str, object]:
         "n_businesses": int(coxph_df["business_id"].nunique()),
         "kept_columns": prepared_data.feature_selection.kept_columns,
         "dropped_columns": prepared_data.feature_selection.dropped_columns,
-        "artifact_paths": artifact_paths,
+        "artifact_paths": {k: str(v) for k, v in artifact_paths.items()},
     }
 
 
@@ -487,22 +478,64 @@ def run_full_pipeline(config: CoxConfig) -> dict[str, dict[str, object]]:
         penalizer=config.penalizer,
     )
 
-    time_varying_results = run_time_varying_pipeline(time_varying_config)
-    standard_results = run_standard_cox_pipeline(standard_config)
-
     return {
-        "time_varying": time_varying_results,
-        "standard": standard_results,
+        "time_varying": run_time_varying_pipeline(time_varying_config),
+        "standard": run_standard_cox_pipeline(standard_config),
     }
+
+
+def parse_args() -> CoxConfig:
+    """Parse CLI arguments into a CoxConfig."""
+    parser = argparse.ArgumentParser(
+        description="Fit time-varying and standard Cox survival models."
+    )
+    parser.add_argument(
+        "--data",
+        type=Path,
+        required=True,
+        help="Path to joined_dataset.csv",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="Directory to save Cox artifacts",
+    )
+    parser.add_argument(
+        "--study-end",
+        type=str,
+        default=str(STUDY_END.date()),
+        help="Study end date in YYYY-MM-DD format",
+    )
+    parser.add_argument(
+        "--variance-threshold",
+        type=float,
+        default=VARIANCE_THRESHOLD,
+        help="Variance threshold for feature filtering",
+    )
+    parser.add_argument(
+        "--penalizer",
+        type=float,
+        default=DEFAULT_PENALIZER,
+        help="Penalizer for Cox models",
+    )
+
+    args = parser.parse_args()
+
+    return CoxConfig(
+        data_path=args.data,
+        output_dir=args.output_dir,
+        study_end=pd.Timestamp(args.study_end),
+        variance_threshold=args.variance_threshold,
+        penalizer=args.penalizer,
+    )
 
 
 def main() -> None:
     """Entry point for script execution."""
-    config = CoxConfig(
-        data_path=Path("/content/drive/MyDrive/joined_dataset.csv"),
-        output_dir=Path("/content/drive/MyDrive/cox_outputs"),
-    )
-    run_full_pipeline(config)
+    config = parse_args()
+    results = run_full_pipeline(config)
+    print(json.dumps(results, indent=2))
 
 
 if __name__ == "__main__":
