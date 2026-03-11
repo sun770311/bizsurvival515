@@ -1,3 +1,4 @@
+# Databricks notebook source
 # pylint: disable=import-error,undefined-variable,broad-exception-caught
 """NYC Issued Licenses Job.
 
