@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import mlflow
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +12,8 @@ import pandas as pd
 from lifelines import CoxPHFitter, CoxTimeVaryingFitter
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.preprocessing import StandardScaler
+
+
 
 from pipeline.utils import (
     STUDY_END, VARIANCE_THRESHOLD, FeatureSelectionResult,
@@ -423,8 +426,21 @@ def parse_args() -> CoxConfig:
 def main() -> None:
     """Entry point for script execution."""
     config = parse_args()
-    summary = run_full_pipeline(config)
-    print(json.dumps(summary, indent=2))
+    mlflow.set_experiment("business_survival_cox_models")
+    with mlflow.start_run():
+
+        mlflow.log_params({
+            "penalizer": config.penalizer,
+            "variance_threshold": config.variance_threshold,
+            "study_end": str(config.study_end),
+        })
+
+        summary = run_full_pipeline(config)
+
+        # Log all artifacts produced by the pipeline
+        mlflow.log_artifacts(str(config.output_dir))
+
+        print(json.dumps(summary, indent=2))
 
 
 if __name__ == "__main__":
