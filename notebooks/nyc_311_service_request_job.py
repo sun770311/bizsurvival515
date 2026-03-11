@@ -1,8 +1,8 @@
-# pylint: disable=import-error,undefined-variable,broad-exception-caught
+# pylint: disable=import-error,undefined-variable
 
-"""NYC Issued Licenses Job.
+"""NYC 311 Service Request Job.
 
-Fetches new NYC business licenses from the Socrata API since the last recorded
+Fetches new service requests from the NYC 311 API since the last recorded
 creation date and merges them into a Delta Lake table. Handles schema
 inference from existing data and manages incremental updates efficiently.
 """
@@ -14,19 +14,20 @@ from pyspark.sql.types import StructType, StructField, StringType
 from delta.tables import DeltaTable
 
 APP_TOKEN = dbutils.secrets.get("biz-survival", "nyc_app_token")
-TABLE_PATH = "data_515.default.issued_licenses"
+TABLE_PATH = "data_515.default.311_service_requests"
 COLUMNS_STR = "*"
-ISSUED_LICENSE_SCHEMA = None
-FETCH_LIMIT = 500000
+NYC_311_SCHEMA = None
+FETCH_LIMIT = 200000
+
 
 try:
     df_existing = spark.table(TABLE_PATH)
     columns_list = df_existing.columns
-    COLUMNS_STR = ','.join(columns_list)
-    ISSUED_LICENSE_SCHEMA = StructType(
+    COLUMNS_STR = ",".join(columns_list)
+    NYC_311_SCHEMA = StructType(
         [StructField(c, StringType(), True) for c in columns_list]
     )
-    last_created_date_raw = df_existing.agg(F.max("license_creation_date")).collect()[0][0]
+    last_created_date_raw = df_existing.agg(F.max("created_date")).collect()[0][0]
     if last_created_date_raw is None:
         raise TypeError("No existing data found")
     if isinstance(last_created_date_raw, str):
@@ -38,47 +39,43 @@ except (TypeError, AttributeError, ValueError):
         datetime.today().replace(day=1).strftime("%Y-%m-%dT00:00:00.000")
     )
 
-print("Last Created Date: ", last_created_date)
+print("Last Created Date:", last_created_date)
 
 SOQL_QUERY = (
     f"SELECT {COLUMNS_STR} "
-    f"WHERE license_creation_date > '{last_created_date}' "
+    f"WHERE created_date > '{last_created_date}' "
     f"LIMIT {FETCH_LIMIT}"
 )
 
 client = Socrata("data.cityofnewyork.us", APP_TOKEN)
 try:
-    results = client.get("w7w3-xahh", query=SOQL_QUERY)
+    results = client.get("erm2-nwe9", query=SOQL_QUERY)
 finally:
     client.close()
 
 if results:
-    if ISSUED_LICENSE_SCHEMA is not None:
+    if NYC_311_SCHEMA is not None:
         normalized = [
             {column: row.get(column, None) for column in columns_list}
             for row in results
         ]
-        df_new_data = spark.createDataFrame(
-            normalized, schema=ISSUED_LICENSE_SCHEMA
-        )
+        df_new_data = spark.createDataFrame(normalized, schema=NYC_311_SCHEMA)
     else:
         df_new_data = spark.createDataFrame(results)
     df_new_data = (
         df_new_data
-        .withColumn("license_creation_date", F.to_timestamp("license_creation_date"))
-        .withColumn("lic_expir_dd", F.to_timestamp("lic_expir_dd"))
+        .withColumn("created_date", F.to_timestamp("created_date"))
+        .withColumn("closed_date", F.to_timestamp("closed_date"))
+        .withColumn(
+            "resolution_action_updated_date",
+            F.to_timestamp("resolution_action_updated_date"),
+        )
     )
     print("New Data Count:", df_new_data.count())
 
-    DeltaTable.forName(spark, TABLE_PATH) \
-        .alias("target") \
-        .merge(
-            df_new_data.alias("source"),
-            "target.license_nbr = source.license_nbr"
-        ) \
-        .whenMatchedUpdateAll() \
-        .whenNotMatchedInsertAll() \
-        .execute()
+    DeltaTable.forName(spark, TABLE_PATH).alias("target").merge(
+        df_new_data.alias("source"), "target.unique_key = source.unique_key"
+    ).whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()
     print("Merge completed")
 else:
     print("No new data")
