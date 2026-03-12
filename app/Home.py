@@ -1,78 +1,167 @@
 from __future__ import annotations
 
+import base64
 from pathlib import Path
 
 import streamlit as st
-import streamlit.components.v1 as components
+
+from utils.ui_styles import apply_shared_styles
 
 
-st.set_page_config(page_title="NYC Business Map", layout="wide")
+st.set_page_config(
+    page_title="NYC Business Survival",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+apply_shared_styles()
+
+APP_DIR = Path(__file__).resolve().parent
+VIDEO_PATH = APP_DIR / "assets" / "nyc_drone_shot.mp4"
+
+if not VIDEO_PATH.exists():
+    st.error(f"Missing video file: {VIDEO_PATH}")
+    st.stop()
+
+video_bytes = VIDEO_PATH.read_bytes()
+video_b64 = base64.b64encode(video_bytes).decode("utf-8")
 
 st.markdown(
     """
     <style>
-    .block-container {
-        padding-top: 0.8rem;
-        padding-bottom: 0rem;
-        max-width: 100%;
+    html, body, [class*="css"] {
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    h1 {
-        margin-top: 0.4rem;
+    body {
+        overflow: hidden;
+    }
+
+    .stApp,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"] {
+        background: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    [data-testid="stHeader"] {
+        background: transparent !important;
+        height: 0 !important;
+    }
+
+    [data-testid="stToolbar"] {
+        right: 1rem;
+    }
+
+    [data-testid="stDecoration"] {
+        display: none !important;
+    }
+
+    [data-testid="stSidebar"] {
+        background: rgba(20, 20, 20, 0.92);
+    }
+
+    .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .landing-wrapper {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        z-index: 0;
+    }
+
+    .landing-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+    }
+
+    .landing-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 1;
+    }
+
+    .landing-content {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: white;
+        flex-direction: column;
+        padding: 2rem;
+        gap: 1.5rem;
+        pointer-events: none;
+    }
+
+    .landing-title {
+        font-size: clamp(2.5rem, 6vw, 5rem);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin: 0;
+    }
+
+    div[data-testid="stButton"] {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, calc(-50% + 5.5rem));
+        z-index: 10;
+        width: auto;
+    }
+
+    div[data-testid="stButton"] > button {
+        border-radius: 999px;
+        padding: 0.95rem 1.6rem;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: white;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(8px);
+    }
+
+    div[data-testid="stButton"] > button:hover {
+        border-color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("NYC Business Map")
-st.caption("Interactive business map embedded in Streamlit using Mapbox GL JS.")
-
-# Base app directory
-APP_DIR = Path(__file__).resolve().parent
-
-# Template directory (HTML + JS)
-TEMPLATE_DIR = APP_DIR / "map_templates"
-
-# Artifact directory (geojson, models, etc.)
-ARTIFACT_DIR = APP_DIR / "artifacts"
-
-# GeoJSON location
-GEOJSON_PATH = ARTIFACT_DIR / "geojson" / "businesses.geojson"
-
-# ---- checks ----
-
-if "MAPBOX_PUBLIC_TOKEN" not in st.secrets:
-    st.error("Missing MAPBOX_PUBLIC_TOKEN in Streamlit secrets.")
-    st.stop()
-
-if not GEOJSON_PATH.exists():
-    st.error(f"GeoJSON file not found: {GEOJSON_PATH}")
-    st.stop()
-
-# ---- load assets ----
-
-mapbox_token = st.secrets["MAPBOX_PUBLIC_TOKEN"]
-
-index_html = (TEMPLATE_DIR / "index.html").read_text(encoding="utf-8")
-app_js = (TEMPLATE_DIR / "app.js").read_text(encoding="utf-8")
-geojson_text = GEOJSON_PATH.read_text(encoding="utf-8")
-
-# Inject token + GeoJSON
-html = index_html.replace("YOUR_MAPBOX_PUBLIC_TOKEN", mapbox_token)
-
-html = html.replace(
-    '<script src="/app.js"></script>',
+st.markdown(
     f"""
-    <script>
-      const EMBEDDED_GEOJSON = {geojson_text};
-    </script>
-    <script>
-      {app_js}
-    </script>
+    <div class="landing-wrapper">
+        <video class="landing-video" autoplay muted loop playsinline>
+            <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
+        </video>
+        <div class="landing-overlay"></div>
+        <div class="landing-content">
+            <div class="landing-title">NYC Business Survival</div>
+        </div>
+    </div>
     """,
+    unsafe_allow_html=True,
 )
 
-components.html(html, height=550, scrolling=False)
+clicked = st.button("Explore Now →")
 
-st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+if clicked:
+    st.switch_page("pages/1_Map.py")

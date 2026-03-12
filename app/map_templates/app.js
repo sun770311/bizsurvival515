@@ -248,7 +248,7 @@ function createMap(token) {
 
   return new mapboxgl.Map({
     container: "map",
-    style: "mapbox://styles/mapbox/light-v11",
+    style: "mapbox://styles/mapbox/dark-v11",
     center: NYC_CENTER,
     zoom: NYC_ZOOM
   });
