@@ -36,7 +36,7 @@ class TestInspectLogistic(unittest.TestCase):
         artifacts_dir = self.create_logistic_artifacts_dir()
         config = InspectConfig(artifacts_dir=artifacts_dir)
 
-        pipeline, kept_columns, metrics, coef_summary = load_artifacts(config)
+        pipeline, kept_columns, metrics, coef_summary, train_split = load_artifacts(config)
 
         self.assertIsNotNone(pipeline)
         self.assertIsInstance(kept_columns, list)
@@ -47,27 +47,42 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertFalse(coef_summary.empty)
         self.assertIn("feature", coef_summary.columns)
         self.assertIn("coefficient", coef_summary.columns)
+        self.assertIsInstance(train_split, pd.DataFrame)
+        self.assertFalse(train_split.empty)
 
     def test_build_baseline_profile(self):
         kept_columns = ["a", "b", "c"]
-        baseline = build_baseline_profile(kept_columns)
+        train_split = pd.DataFrame(
+            {
+                "a": [1.0, 3.0, 5.0],
+                "b": [2.0, 4.0, 6.0],
+                "c": [10.0, 20.0, 30.0],
+            }
+        )
+
+        baseline = build_baseline_profile(kept_columns, train_split)
 
         self.assertEqual(baseline.shape, (1, 3))
         self.assertEqual(baseline.columns.tolist(), kept_columns)
-        self.assertTrue((baseline.iloc[0] == 0).all())
+        self.assertEqual(baseline.index.tolist(), ["baseline"])
+        self.assertEqual(baseline.loc["baseline", "a"], 3.0)
+        self.assertEqual(baseline.loc["baseline", "b"], 4.0)
+        self.assertEqual(baseline.loc["baseline", "c"], 20.0)
 
     def test_build_hypothetical_profiles_contains_baseline(self):
         kept_columns = [
-            "active_license_count",
-            "business_category_electronics_store",
-            "business_category_electronic_cigarette_dealer",
-            "business_category_bingo_game_operator",
-            "business_category_laundries",
-            "business_category_car_wash",
-            "business_category_debt_collection_agency",
+            "active_license_count_first12m_mean",
+            "business_category_electronics_store_first12m_max",
+            "business_category_electronic_cigarette_dealer_first12m_max",
+            "business_category_bingo_game_operator_first12m_max",
+            "business_category_industrial_laundry_first12m_max",
+            "business_category_debt_collection_agency_first12m_max",
+            "business_category_home_improvement_contractor_first12m_max",
         ]
 
-        profiles = build_hypothetical_profiles(kept_columns)
+        train_split = pd.DataFrame([{column: 0.0 for column in kept_columns}])
+
+        profiles = build_hypothetical_profiles(kept_columns, train_split)
 
         expected_profiles = {
             "baseline",
@@ -75,9 +90,9 @@ class TestInspectLogistic(unittest.TestCase):
             "vape_shop",
             "bingo_operator",
             "many_licenses",
-            "laundries",
-            "car_wash",
+            "industrial_laundry",
             "debt_collection",
+            "home_improvement_contractor",
         }
 
         self.assertEqual(set(profiles.index), expected_profiles)
@@ -85,24 +100,53 @@ class TestInspectLogistic(unittest.TestCase):
 
     def test_build_hypothetical_profiles_sets_expected_feature_values(self):
         kept_columns = [
-            "active_license_count",
-            "business_category_electronics_store",
-            "business_category_laundries",
+            "active_license_count_first12m_mean",
+            "business_category_electronics_store_first12m_max",
+            "business_category_industrial_laundry_first12m_max",
+            "business_category_home_improvement_contractor_first12m_max",
         ]
 
-        profiles = build_hypothetical_profiles(kept_columns)
+        train_split = pd.DataFrame(
+            {
+                "active_license_count_first12m_mean": [2.0, 2.0, 2.0],
+                "business_category_electronics_store_first12m_max": [0.0, 0.0, 0.0],
+                "business_category_industrial_laundry_first12m_max": [0.0, 0.0, 0.0],
+                "business_category_home_improvement_contractor_first12m_max": [0.0, 0.0, 0.0],
+            }
+        )
 
-        self.assertEqual(profiles.loc["baseline", "active_license_count"], 0)
-        self.assertEqual(profiles.loc["electronics_store", "business_category_electronics_store"], 1)
-        self.assertEqual(profiles.loc["many_licenses", "active_license_count"], 5)
-        self.assertEqual(profiles.loc["laundries", "business_category_laundries"], 1)
+        profiles = build_hypothetical_profiles(kept_columns, train_split)
+
+        self.assertEqual(
+            profiles.loc["baseline", "active_license_count_first12m_mean"],
+            2.0,
+        )
+        self.assertEqual(
+            profiles.loc["electronics_store", "business_category_electronics_store_first12m_max"],
+            1.0,
+        )
+        self.assertEqual(
+            profiles.loc["many_licenses", "active_license_count_first12m_mean"],
+            5.0,
+        )
+        self.assertEqual(
+            profiles.loc["industrial_laundry", "business_category_industrial_laundry_first12m_max"],
+            1.0,
+        )
+        self.assertEqual(
+            profiles.loc[
+                "home_improvement_contractor",
+                "business_category_home_improvement_contractor_first12m_max",
+            ],
+            1.0,
+        )
 
     def test_predict_profiles_returns_valid_output(self):
         artifacts_dir = self.create_logistic_artifacts_dir()
         config = InspectConfig(artifacts_dir=artifacts_dir)
-        pipeline, kept_columns, _metrics, _coef_summary = load_artifacts(config)
+        pipeline, kept_columns, _metrics, _coef_summary, train_split = load_artifacts(config)
 
-        profiles = build_hypothetical_profiles(kept_columns)
+        profiles = build_hypothetical_profiles(kept_columns, train_split)
         results = predict_profiles(pipeline, profiles)
 
         self.assertFalse(results.empty)
@@ -166,27 +210,27 @@ class TestInspectLogistic(unittest.TestCase):
                     "vape_shop",
                     "bingo_operator",
                     "many_licenses",
-                    "laundries",
-                    "car_wash",
+                    "industrial_laundry",
                     "debt_collection",
+                    "home_improvement_contractor",
                 ],
-                "predicted_survival_probability": [0.50, 0.60, 0.40, 0.55, 0.70, 0.45, 0.52, 0.48],
-                "predicted_class": [1, 1, 0, 1, 1, 0, 1, 0],
+                "predicted_survival_probability": [0.50, 0.40, 0.65, 0.60, 0.70, 0.58, 0.45, 0.68],
+                "predicted_class": [1, 0, 1, 1, 1, 1, 0, 1],
             }
         )
 
         coef_summary = pd.DataFrame(
             {
                 "feature": [
-                    "business_category_electronics_store",
-                    "business_category_electronic_cigarette_dealer",
-                    "business_category_bingo_game_operator",
-                    "active_license_count",
-                    "business_category_laundries",
-                    "business_category_car_wash",
-                    "business_category_debt_collection_agency",
+                    "business_category_electronics_store_first12m_max",
+                    "business_category_electronic_cigarette_dealer_first12m_max",
+                    "business_category_bingo_game_operator_first12m_max",
+                    "active_license_count_first12m_mean",
+                    "business_category_industrial_laundry_first12m_max",
+                    "business_category_debt_collection_agency_first12m_max",
+                    "business_category_home_improvement_contractor_first12m_max",
                 ],
-                "coefficient": [1.0, -1.0, 0.5, 0.8, -0.3, 0.2, -0.4],
+                "coefficient": [-1.0, 1.0, 0.5, 0.8, 0.2, -0.4, 0.7],
             }
         )
 
@@ -205,19 +249,63 @@ class TestInspectLogistic(unittest.TestCase):
         )
         self.assertEqual(len(expectation_results), 7)
 
+    def test_check_hypothetical_expectations_with_feature_missing(self):
+        results = pd.DataFrame(
+            {
+                "profile": [
+                    "baseline",
+                    "electronics_store",
+                    "vape_shop",
+                    "bingo_operator",
+                    "many_licenses",
+                    "industrial_laundry",
+                    "debt_collection",
+                    "home_improvement_contractor",
+                ],
+                "predicted_survival_probability": [0.50, 0.40, 0.65, 0.60, 0.70, 0.58, 0.45, 0.68],
+                "predicted_class": [1, 0, 1, 1, 1, 1, 0, 1],
+            }
+        )
+
+        coef_summary = pd.DataFrame(
+            {
+                "feature": [
+                    "business_category_electronics_store_first12m_max",
+                    "business_category_electronic_cigarette_dealer_first12m_max",
+                    "business_category_bingo_game_operator_first12m_max",
+                    "active_license_count_first12m_mean",
+                    "business_category_debt_collection_agency_first12m_max",
+                    "business_category_home_improvement_contractor_first12m_max",
+                ],
+                "coefficient": [-1.0, 1.0, 0.5, 0.8, -0.4, 0.7],
+            }
+        )
+
+        expectation_results = check_hypothetical_expectations(results, coef_summary)
+
+        industrial_row = expectation_results.loc[
+            expectation_results["profile"] == "industrial_laundry"
+        ].iloc[0]
+
+        self.assertEqual(industrial_row["expected_vs_baseline"], "feature_missing")
+        self.assertEqual(industrial_row["actual_vs_baseline"], "not_checked")
+        self.assertFalse(bool(industrial_row["matches_expectation"]))
+
     def test_check_hypothetical_expectations_with_real_artifacts(self):
         artifacts_dir = self.create_logistic_artifacts_dir()
         config = InspectConfig(artifacts_dir=artifacts_dir)
-        pipeline, kept_columns, _metrics, coef_summary = load_artifacts(config)
+        pipeline, kept_columns, _metrics, coef_summary, train_split = load_artifacts(config)
 
-        profiles = build_hypothetical_profiles(kept_columns)
+        profiles = build_hypothetical_profiles(kept_columns, train_split)
         results = predict_profiles(pipeline, profiles)
         expectation_results = check_hypothetical_expectations(results, coef_summary)
 
         self.assertFalse(expectation_results.empty)
         self.assertIn("matches_expectation", expectation_results.columns)
-        self.assertEqual(expectation_results["matches_expectation"].dtype, bool)
         self.assertEqual(len(expectation_results), 7)
+        self.assertTrue(
+            expectation_results["matches_expectation"].isin([True, False]).all()
+        )
 
 
 if __name__ == "__main__":

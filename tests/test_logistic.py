@@ -7,14 +7,18 @@ import pandas as pd
 from pipeline.logistic import (
     FeatureSelectionResult,
     LogisticConfig,
+    aggregate_first_year_features,
     balance_dataset,
     build_business_survival_summary,
     build_coefficient_summary,
     build_training_dataset,
+    choose_aggregation,
     evaluate_model,
     filter_eligible_businesses,
     fit_logistic_model,
     get_excluded_feature_columns,
+    get_first_year_window,
+    is_binary_series,
     load_joined_dataset,
     prepare_training_data,
     restrict_to_study_window,
@@ -61,14 +65,14 @@ class TestLogistic(unittest.TestCase):
         self.assertIn("survived_36m", summary.columns)
         self.assertTrue(set(summary["survived_36m"].unique()).issubset({0, 1}))
 
-    def test_filter_eligible_businesses_respects_cutoff(self):
+    def test_filter_eligible_businesses_respects_cutoff_and_window(self):
         business_survival = pd.DataFrame(
             {
-                "business_id": ["A", "B"],
-                "first_month": pd.to_datetime(["2020-01-01", "2024-01-01"]),
-                "last_month": pd.to_datetime(["2025-01-01", "2026-01-01"]),
-                "duration_months": [60, 24],
-                "survived_36m": [1, 0],
+                "business_id": ["A", "B", "C"],
+                "first_month": pd.to_datetime(["2020-01-01", "2024-01-01", "2022-01-01"]),
+                "last_month": pd.to_datetime(["2025-01-01", "2026-01-01", "2022-06-01"]),
+                "duration_months": [60, 24, 5],
+                "survived_36m": [1, 0, 0],
             }
         )
 
@@ -76,9 +80,86 @@ class TestLogistic(unittest.TestCase):
             business_survival=business_survival,
             study_end=pd.Timestamp("2026-03-01"),
             survival_months=36,
+            aggregation_months=12,
         )
 
         self.assertEqual(eligible["business_id"].tolist(), ["A"])
+
+    def test_get_first_year_window_keeps_first_twelve_rows_per_business(self):
+        df = pd.DataFrame(
+            {
+                "business_id": ["A"] * 14 + ["B"] * 8,
+                "month": pd.date_range("2020-01-01", periods=14, freq="MS").tolist()
+                + pd.date_range("2021-01-01", periods=8, freq="MS").tolist(),
+                "value": range(22),
+            }
+        )
+
+        first_year = get_first_year_window(df, aggregation_months=12)
+        counts = first_year.groupby("business_id").size().to_dict()
+
+        self.assertEqual(counts["A"], 12)
+        self.assertEqual(counts["B"], 8)
+
+    def test_is_binary_series_detects_binary_values(self):
+        self.assertTrue(is_binary_series(pd.Series([0, 1, 1, 0, None])))
+        self.assertFalse(is_binary_series(pd.Series([0, 1, 2, None])))
+
+    def test_choose_aggregation_returns_expected_rules(self):
+        self.assertEqual(
+            choose_aggregation(
+                "business_category_test",
+                pd.Series([0, 1, 0]),
+            ),
+            "max",
+        )
+        self.assertEqual(
+            choose_aggregation(
+                "complaint_type_noise",
+                pd.Series([0, 1, 2]),
+            ),
+            "sum",
+        )
+        self.assertEqual(
+            choose_aggregation(
+                "active_license_count",
+                pd.Series([1, 2, 3]),
+            ),
+            "mean",
+        )
+        self.assertEqual(
+            choose_aggregation(
+                "business_latitude",
+                pd.Series([40.1, 40.1, 40.1]),
+            ),
+            "first",
+        )
+
+    def test_aggregate_first_year_features_returns_one_row_per_business(self):
+        df = pd.DataFrame(
+            {
+                "business_id": ["A", "A", "A", "B", "B"],
+                "month": pd.to_datetime(
+                    ["2020-01-01", "2020-02-01", "2020-03-01", "2021-01-01", "2021-02-01"]
+                ),
+                "active_license_count": [1, 2, 3, 2, 4],
+                "business_category_store": [1, 1, 1, 0, 1],
+                "complaint_type_noise": [0, 1, 2, 0, 1],
+                "business_latitude": [40.0, 40.0, 40.0, 41.0, 41.0],
+                "open": [1, 1, 0, 1, 1],
+                "months_since_first_license": [1, 2, 3, 1, 2],
+            }
+        )
+
+        aggregated = aggregate_first_year_features(df, aggregation_months=12)
+
+        self.assertEqual(aggregated["business_id"].nunique(), 2)
+        self.assertEqual(len(aggregated), 2)
+        self.assertIn("active_license_count_first12m_mean", aggregated.columns)
+        self.assertIn("business_category_store_first12m_max", aggregated.columns)
+        self.assertIn("complaint_type_noise_first12m_sum", aggregated.columns)
+        self.assertIn("business_latitude_first12m_first", aggregated.columns)
+        self.assertIn("observed_months_in_first_window", aggregated.columns)
 
     def test_build_training_dataset_returns_target(self):
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
@@ -88,16 +169,18 @@ class TestLogistic(unittest.TestCase):
             restricted,
             study_end=pd.Timestamp("2026-03-01"),
             survival_months=36,
+            aggregation_months=12,
         )
 
         self.assertFalse(training_df.empty)
         self.assertIn("survived_36m", training_df.columns)
+        self.assertIn("observed_months_in_first_window", training_df.columns)
 
     def test_get_excluded_feature_columns_contains_leakage_columns(self):
         excluded = get_excluded_feature_columns()
         self.assertIn("survived_36m", excluded)
         self.assertIn("duration_months", excluded)
-        self.assertIn("open", excluded)
+        self.assertIn("open_first12m_max", excluded)
 
     def test_split_features_and_target_returns_valid_shapes(self):
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
@@ -106,6 +189,7 @@ class TestLogistic(unittest.TestCase):
             restricted,
             study_end=pd.Timestamp("2026-03-01"),
             survival_months=36,
+            aggregation_months=12,
         )
 
         X, y = split_features_and_target(training_df)
@@ -246,6 +330,8 @@ class TestLogistic(unittest.TestCase):
 
             self.assertIn("metrics", summary)
             self.assertIn("artifact_paths", summary)
+            self.assertIn("aggregation_months", summary)
+            self.assertEqual(summary["aggregation_months"], 12)
 
             expected_files = [
                 "logistic_pipeline.pkl",
