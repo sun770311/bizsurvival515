@@ -5,7 +5,7 @@ Input:
 
 Processing steps:
 - Load and validate the joined business-month panel
-- Build a business-level dataset with a 36-month survival target
+- Build a business-level dataset using aggregated first-year features
 - Remove leakage and near-constant predictors
 - Balance the training data and fit logistic regression
 - Save model artifacts and evaluation outputs
@@ -46,6 +46,7 @@ from sklearn.utils import resample
 
 STUDY_END = pd.Timestamp("2026-03-01")
 SURVIVAL_MONTHS = 36
+AGGREGATION_MONTHS = 12
 VARIANCE_THRESHOLD = 1e-8
 TEST_SIZE = 0.2
 RANDOM_STATE = 42
@@ -60,6 +61,7 @@ class LogisticConfig:
     output_dir: Path
     study_end: pd.Timestamp = STUDY_END
     survival_months: int = SURVIVAL_MONTHS
+    aggregation_months: int = AGGREGATION_MONTHS
     variance_threshold: float = VARIANCE_THRESHOLD
     test_size: float = TEST_SIZE
     random_state: int = RANDOM_STATE
@@ -138,7 +140,7 @@ def build_business_survival_summary(
     df: pd.DataFrame,
     survival_months: int,
 ) -> pd.DataFrame:
-    """Build business-level survival summary and 36-month target."""
+    """Build business-level survival summary and survival target."""
     first_month = df.groupby("business_id")["month"].min()
     last_month = df.groupby("business_id")["month"].max()
 
@@ -167,41 +169,166 @@ def filter_eligible_businesses(
     business_survival: pd.DataFrame,
     study_end: pd.Timestamp,
     survival_months: int,
+    aggregation_months: int,
 ) -> pd.DataFrame:
-    """Keep businesses with enough follow-up window to evaluate 36-month survival."""
-    eligibility_cutoff = study_end - pd.DateOffset(months=survival_months)
+    """Keep businesses with a full first-year window and enough horizon to score survival.
+
+    This creates a first-year-profile modeling cohort:
+    - business must have entered early enough to evaluate 36-month survival
+    - business must have at least `aggregation_months` observed months available
+      so first-year aggregation is well-defined
+    """
+    survival_cutoff = study_end - pd.DateOffset(months=survival_months)
+    min_last_month_needed = (
+        business_survival["first_month"] + pd.DateOffset(months=aggregation_months - 1)
+    )
+
     eligible = business_survival.loc[
-        business_survival["first_month"] <= eligibility_cutoff
+        (business_survival["first_month"] <= survival_cutoff)
+        & (business_survival["last_month"] >= min_last_month_needed)
     ].copy()
     return eligible
 
 
-def extract_baseline_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Use the first observed month for each business as baseline features."""
-    business_features = (
-        df.sort_values(["business_id", "month"])
-        .groupby("business_id")
-        .first()
+def get_first_year_window(
+    df: pd.DataFrame,
+    aggregation_months: int,
+) -> pd.DataFrame:
+    """Return the first N observed monthly rows per business."""
+    panel = df.sort_values(["business_id", "month"]).copy()
+    panel["row_num_within_business"] = panel.groupby("business_id").cumcount()
+    first_year = panel.loc[
+        panel["row_num_within_business"] < aggregation_months
+    ].copy()
+    return first_year
+
+
+def is_binary_series(series: pd.Series) -> bool:
+    """Return True when non-null values are all binary 0/1."""
+    non_null = series.dropna()
+    if non_null.empty:
+        return False
+    unique_values = set(non_null.unique().tolist())
+    return unique_values.issubset({0, 1})
+
+
+def choose_aggregation(column_name: str, series: pd.Series) -> str:
+    """Choose aggregation rule for a feature column."""
+    static_first_columns = {
+        "business_latitude",
+        "business_longitude",
+        "location_cluster_lat",
+        "location_cluster_lng",
+        "location_cluster",
+    }
+
+    sum_columns = {
+        "complaint_sum",
+        "total_311",
+    }
+
+    if column_name in {"business_id", "month", "row_num_within_business"}:
+        raise ValueError(f"Aggregation should not be chosen for identifier column {column_name}.")
+
+    if column_name in static_first_columns:
+        return "first"
+
+    if column_name.startswith("business_category_"):
+        return "max"
+
+    if column_name.startswith("complaint_type_"):
+        return "sum"
+
+    if column_name in sum_columns:
+        return "sum"
+
+    if column_name == "active_license_count":
+        return "mean"
+
+    if column_name == "open":
+        return "max"
+
+    if column_name == "months_since_first_license":
+        return "max"
+
+    if is_binary_series(series):
+        return "max"
+
+    return "last"
+
+
+def aggregate_first_year_features(
+    df: pd.DataFrame,
+    aggregation_months: int,
+) -> pd.DataFrame:
+    """Aggregate the first N observed months into one row per business."""
+    first_year = get_first_year_window(df, aggregation_months=aggregation_months)
+
+    feature_columns = [
+        column
+        for column in first_year.columns
+        if column not in {"business_id", "month", "row_num_within_business"}
+    ]
+
+    aggregation_map: dict[str, str] = {}
+    for column in feature_columns:
+        aggregation_map[column] = choose_aggregation(column, first_year[column])
+
+    aggregated = (
+        first_year.groupby("business_id", as_index=False)
+        .agg(aggregation_map)
+        .copy()
+    )
+
+    rename_map = {}
+    for column, agg_name in aggregation_map.items():
+        if agg_name == "sum":
+            rename_map[column] = f"{column}_first12m_sum"
+        elif agg_name == "mean":
+            rename_map[column] = f"{column}_first12m_mean"
+        elif agg_name == "max":
+            rename_map[column] = f"{column}_first12m_max"
+        elif agg_name == "last":
+            rename_map[column] = f"{column}_first12m_last"
+        elif agg_name == "first":
+            rename_map[column] = f"{column}_first12m_first"
+
+    aggregated = aggregated.rename(columns=rename_map)
+
+    first_year_counts = (
+        first_year.groupby("business_id")
+        .size()
+        .rename("observed_months_in_first_window")
         .reset_index()
     )
-    return business_features
+
+    aggregated = aggregated.merge(first_year_counts, on="business_id", how="left")
+    return aggregated
 
 
 def build_training_dataset(
     df: pd.DataFrame,
     study_end: pd.Timestamp,
     survival_months: int,
+    aggregation_months: int,
 ) -> pd.DataFrame:
-    """Build business-level training dataset with baseline features and target."""
+    """Build business-level training dataset with first-year features and target."""
     business_survival = build_business_survival_summary(df, survival_months)
     eligible = filter_eligible_businesses(
         business_survival=business_survival,
         study_end=study_end,
         survival_months=survival_months,
+        aggregation_months=aggregation_months,
     )
-    business_features = extract_baseline_features(df)
+    eligible_ids = set(eligible["business_id"])
 
-    training_df = business_features.merge(
+    eligible_panel = df.loc[df["business_id"].isin(eligible_ids)].copy()
+    aggregated_features = aggregate_first_year_features(
+        eligible_panel,
+        aggregation_months=aggregation_months,
+    )
+
+    training_df = aggregated_features.merge(
         eligible[
             [
                 "business_id",
@@ -221,16 +348,17 @@ def get_excluded_feature_columns() -> list[str]:
     """Return columns excluded from logistic feature matrix."""
     return [
         "business_id",
-        "month",
         "first_month",
         "last_month",
         "duration_months",
         "survived_36m",
-        "open",
-        "months_since_first_license",
-        "business_category_sum",
-        "complaint_sum",
-        "total_311",
+        # leakage / target-adjacent columns intentionally excluded from fitting
+        "months_since_first_license_first12m_max",
+        "business_category_sum_first12m_max",
+        "complaint_sum_first12m_sum",
+        "total_311_first12m_sum",
+        "open_first12m_max",
+        "location_cluster_first12m_first",
     ]
 
 
@@ -340,6 +468,7 @@ def prepare_training_data(config: LogisticConfig) -> PreparedTrainingData:
         df=df,
         study_end=config.study_end,
         survival_months=config.survival_months,
+        aggregation_months=config.aggregation_months,
     )
     X_raw, y = split_features_and_target(training_df)
     X, feature_selection = select_nonconstant_features(
@@ -561,6 +690,7 @@ def run_logistic_pipeline(config: LogisticConfig) -> dict[str, object]:
         "balanced_shape": prepared_data.balanced_df.shape,
         "train_shape": prepared_data.X_train.shape,
         "test_shape": prepared_data.X_test.shape,
+        "aggregation_months": config.aggregation_months,
         "n_kept_columns": len(prepared_data.feature_selection.kept_columns),
         "n_dropped_columns": len(prepared_data.feature_selection.dropped_columns),
         "target_distribution_original": prepared_data.y.value_counts().to_dict(),
@@ -602,6 +732,12 @@ def parse_args() -> LogisticConfig:
         help="Survival horizon in months",
     )
     parser.add_argument(
+        "--aggregation-months",
+        type=int,
+        default=AGGREGATION_MONTHS,
+        help="Number of first observed months to aggregate per business",
+    )
+    parser.add_argument(
         "--variance-threshold",
         type=float,
         default=VARIANCE_THRESHOLD,
@@ -633,6 +769,7 @@ def parse_args() -> LogisticConfig:
         output_dir=args.output_dir,
         study_end=pd.Timestamp(args.study_end),
         survival_months=args.survival_months,
+        aggregation_months=args.aggregation_months,
         variance_threshold=args.variance_threshold,
         test_size=args.test_size,
         random_state=args.random_state,
