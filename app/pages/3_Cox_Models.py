@@ -767,6 +767,27 @@ with tv_tab:
         """
     )
 
+    st.markdown(
+        """
+        **Predictor color legend**
+
+        <span style="background:#1d4ed8;color:white;padding:6px 10px;border-radius:6px;margin-right:10px;">
+        Business category predictor
+        </span>
+
+        <span style="background:#ea580c;color:white;padding:6px 10px;border-radius:6px;margin-right:10px;">
+        Complaint type predictor
+        </span>
+
+        <span style="background:#166534;color:white;padding:6px 10px;border-radius:6px;">
+        Other predictors (location, licenses)
+        </span>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("**Top features increasing hazard**")
