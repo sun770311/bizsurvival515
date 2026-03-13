@@ -1,94 +1,33 @@
-"""Create a business-level Mapbox GeoJSON file from joined panel and license data.
-
-Input:
-- joined_dataset.csv
-- licenses.csv
-
-Processing steps:
-- Load and validate joined panel and license data
-- Clean business IDs, contact fields, and coordinates
-- Filter license records to valid NYC boroughs and coordinates
-- Aggregate joined panel to one row per business_id
-- Aggregate license metadata into a list per business_id
-- Use the first valid license latitude/longitude per business_id
-
-Output:
-- businesses.geojson
-"""
+"""Create a business-level Mapbox GeoJSON file from joined panel and license data."""
 
 from __future__ import annotations
 
 import argparse
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-
-CUTOFF_DATE = pd.Timestamp("2026-03-01")
-
-NYC_LAT_MIN = 40.49
-NYC_LAT_MAX = 40.92
-NYC_LNG_MIN = -74.27
-NYC_LNG_MAX = -73.68
-
-VALID_BOROUGHS = {
-    "Manhattan",
-    "Brooklyn",
-    "Queens",
-    "Bronx",
-    "Staten Island",
-}
+from pipeline.utils import (
+    CUTOFF_DATE, VALID_BOROUGHS, NYC_BBOX, BoundingBox,
+    load_joined_dataset, validate_joined_dataset, save_json_artifact
+)
 
 
 @dataclass(frozen=True)
 class GeoJSONConfig:
     """Configuration for business-level GeoJSON export."""
-
     joined_data_path: Path
     licenses_path: Path
     output_path: Path
     cutoff_date: pd.Timestamp = CUTOFF_DATE
-    lat_min: float = NYC_LAT_MIN
-    lat_max: float = NYC_LAT_MAX
-    lng_min: float = NYC_LNG_MIN
-    lng_max: float = NYC_LNG_MAX
-
-
-def load_joined_dataset(joined_data_path: Path) -> pd.DataFrame:
-    """Load joined dataset and parse panel month."""
-    joined = pd.read_csv(joined_data_path)
-    joined["business_id"] = joined["business_id"].astype("string").str.strip()
-    joined["business_id"] = joined["business_id"].replace(
-        {"": pd.NA, "nan": pd.NA, "None": pd.NA}
-    )
-    joined["month"] = pd.to_datetime(joined["month"], errors="coerce")
-    return joined
+    bbox: BoundingBox = NYC_BBOX
 
 
 def load_licenses_dataset(licenses_path: Path) -> pd.DataFrame:
     """Load licenses dataset."""
     return pd.read_csv(licenses_path)
-
-
-def validate_joined_dataset(joined: pd.DataFrame) -> None:
-    """Validate required joined panel columns."""
-    required_columns = [
-        "business_id",
-        "month",
-        "complaint_sum",
-        "open",
-    ]
-    missing_columns = [
-        column for column in required_columns if column not in joined.columns
-    ]
-    if missing_columns:
-        raise ValueError(f"Missing required joined columns: {missing_columns}")
-
-    if joined["month"].isna().any():
-        raise ValueError("Some joined month values could not be parsed as datetimes.")
 
 
 def validate_licenses_dataset(licenses: pd.DataFrame) -> None:
@@ -129,20 +68,9 @@ def clean_license_fields(licenses: pd.DataFrame) -> pd.DataFrame:
     )
 
     string_columns = [
-        "Business Name",
-        "Contact Phone",
-        "Building Number",
-        "Street1",
-        "Street2",
-        "Street3",
-        "Apt/Suite",
-        "City",
-        "State",
-        "ZIP Code",
-        "Borough",
-        "License Number",
-        "License Type",
-        "License Status",
+        "Business Name", "Contact Phone", "Building Number", "Street1",
+        "Street2", "Street3", "Apt/Suite", "City", "State", "ZIP Code",
+        "Borough", "License Number", "License Type", "License Status",
         "Business Category",
     ]
 
@@ -164,11 +92,7 @@ def build_full_address(licenses: pd.DataFrame) -> pd.DataFrame:
     enriched = licenses.copy()
 
     address_parts = [
-        "Building Number",
-        "Street1",
-        "Street2",
-        "Street3",
-        "Apt/Suite",
+        "Building Number", "Street1", "Street2", "Street3", "Apt/Suite",
     ]
     existing_address_parts = [
         column for column in address_parts if column in enriched.columns
@@ -225,10 +149,7 @@ def filter_valid_boroughs(licenses: pd.DataFrame) -> pd.DataFrame:
 
 def filter_nyc_license_coordinates(
     licenses: pd.DataFrame,
-    lat_min: float,
-    lat_max: float,
-    lng_min: float,
-    lng_max: float,
+    bbox: BoundingBox,
 ) -> pd.DataFrame:
     """Keep only license rows with valid NYC coordinates."""
     filtered = licenses.dropna(
@@ -236,8 +157,8 @@ def filter_nyc_license_coordinates(
     ).copy()
 
     filtered = filtered[
-        filtered["Latitude"].between(lat_min, lat_max)
-        & filtered["Longitude"].between(lng_min, lng_max)
+        filtered["Latitude"].between(bbox.lat_min, bbox.lat_max)
+        & filtered["Longitude"].between(bbox.lng_min, bbox.lng_max)
     ].copy()
 
     return filtered
@@ -266,17 +187,9 @@ def build_business_summary(
 def deduplicate_license_records(licenses: pd.DataFrame) -> pd.DataFrame:
     """Remove duplicate license rows for cleaner popup output."""
     candidate_columns = [
-        "Business Unique ID",
-        "Business Name",
-        "full_address",
-        "Borough",
-        "Contact Phone",
-        "License Number",
-        "License Type",
-        "License Status",
-        "Business Category",
-        "Latitude",
-        "Longitude",
+        "Business Unique ID", "Business Name", "full_address", "Borough",
+        "Contact Phone", "License Number", "License Type", "License Status",
+        "Business Category", "Latitude", "Longitude",
     ]
     existing_columns = [
         column for column in candidate_columns if column in licenses.columns
@@ -295,10 +208,8 @@ def convert_value(value: Any) -> Any:
     """Convert pandas values into JSON-serializable Python values."""
     if pd.isna(value):
         return None
-
     if isinstance(value, pd.Timestamp):
         return value.strftime("%Y-%m-%d")
-
     return value
 
 
@@ -326,7 +237,6 @@ def build_license_list_for_business(group: pd.DataFrame) -> list[dict[str, Any]]
 def build_business_license_metadata(licenses: pd.DataFrame) -> pd.DataFrame:
     """Aggregate license metadata to one row per business_id."""
     deduped = deduplicate_license_records(licenses)
-
     metadata_rows: list[dict[str, Any]] = []
 
     for business_id, group in deduped.groupby("Business Unique ID", dropna=True):
@@ -389,31 +299,11 @@ def build_feature(row: pd.Series) -> dict[str, Any] | None:
 def build_geojson_features(businesses: pd.DataFrame) -> list[dict[str, Any]]:
     """Build GeoJSON feature list from merged business records."""
     features: list[dict[str, Any]] = []
-
     for _, row in businesses.iterrows():
         feature = build_feature(row)
         if feature is not None:
             features.append(feature)
-
     return features
-
-
-def build_geojson(features: list[dict[str, Any]]) -> dict[str, Any]:
-    """Wrap features in a GeoJSON FeatureCollection."""
-    return {
-        "type": "FeatureCollection",
-        "features": features,
-    }
-
-
-def save_geojson(geojson: dict[str, Any], output_path: Path) -> Path:
-    """Save GeoJSON to disk."""
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with output_path.open("w", encoding="utf-8") as file_obj:
-        json.dump(geojson, file_obj, indent=2, allow_nan=False)
-
-    return output_path
 
 
 def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
@@ -421,7 +311,7 @@ def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
     joined = load_joined_dataset(config.joined_data_path)
     licenses = load_licenses_dataset(config.licenses_path)
 
-    validate_joined_dataset(joined)
+    validate_joined_dataset(joined, ["business_id", "month", "complaint_sum", "open"])
     validate_licenses_dataset(licenses)
 
     joined = clean_joined_business_ids(joined)
@@ -430,10 +320,7 @@ def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
     licenses = filter_valid_boroughs(licenses)
     licenses = filter_nyc_license_coordinates(
         licenses=licenses,
-        lat_min=config.lat_min,
-        lat_max=config.lat_max,
-        lng_min=config.lng_min,
-        lng_max=config.lng_max,
+        bbox=config.bbox,
     )
 
     business_summary = build_business_summary(
@@ -447,9 +334,12 @@ def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
     )
 
     features = build_geojson_features(businesses)
-    geojson = build_geojson(features)
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features,
+    }
 
-    return save_geojson(geojson, config.output_path)
+    return save_json_artifact(geojson, config.output_path)
 
 
 def parse_args() -> GeoJSONConfig:
@@ -457,30 +347,10 @@ def parse_args() -> GeoJSONConfig:
     parser = argparse.ArgumentParser(
         description="Build business-level Mapbox GeoJSON from joined panel and licenses."
     )
-    parser.add_argument(
-        "--joined-data",
-        type=Path,
-        required=True,
-        help="Path to joined_dataset.csv",
-    )
-    parser.add_argument(
-        "--licenses",
-        type=Path,
-        required=True,
-        help="Path to licenses.csv",
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        required=True,
-        help="Path to write businesses.geojson",
-    )
-    parser.add_argument(
-        "--cutoff-date",
-        type=str,
-        default=str(CUTOFF_DATE.date()),
-        help="Cutoff date in YYYY-MM-DD format for active status",
-    )
+    parser.add_argument("--joined-data", type=Path, required=True)
+    parser.add_argument("--licenses", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--cutoff-date", type=str, default=str(CUTOFF_DATE.date()))
 
     args = parser.parse_args()
 

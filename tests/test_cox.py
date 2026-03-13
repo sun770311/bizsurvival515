@@ -1,3 +1,5 @@
+"""Tests for the cox survival modeling pipeline module."""
+
 from pathlib import Path
 import tempfile
 import unittest
@@ -6,22 +8,19 @@ import pandas as pd
 from lifelines import CoxPHFitter
 from sklearn.preprocessing import StandardScaler
 
+from pipeline.utils import load_joined_dataset, FeatureSelectionResult
 from pipeline.cox import (
     CoxConfig,
-    FeatureSelectionResult,
     build_business_level_dataset,
     build_coefficient_summary,
     build_time_varying_panel,
     fit_standard_cox_model,
     get_feature_columns,
-    get_model_drop_columns,
-    load_joined_dataset,
     prepare_business_level_model_data,
     prepare_time_varying_model_data,
     run_standard_cox_pipeline,
     scale_features,
     select_nonconstant_features,
-    validate_joined_dataset,
 )
 
 
@@ -29,29 +28,10 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 class TestCox(unittest.TestCase):
-    def test_load_joined_dataset_parses_month_column(self):
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        self.assertIn("month", joined.columns)
-        self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
-
-    def test_validate_joined_dataset_accepts_valid_data(self):
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        validate_joined_dataset(joined)
-
-    def test_validate_joined_dataset_rejects_duplicate_rows(self):
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        duplicated = pd.concat([joined, joined.iloc[[0]]], ignore_index=True)
-
-        with self.assertRaisesRegex(ValueError, "Duplicate business_id-month rows"):
-            validate_joined_dataset(duplicated)
-
-    def test_get_model_drop_columns_contains_expected_columns(self):
-        dropped = get_model_drop_columns()
-        self.assertIn("open", dropped)
-        self.assertIn("business_category_sum", dropped)
-        self.assertIn("total_311", dropped)
+    """Test suite for Cox survival modeling pipeline functions."""
 
     def test_build_time_varying_panel_has_required_columns(self):
+        """Test that the time-varying panel includes start, stop, and event columns."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         panel = build_time_varying_panel(joined, pd.Timestamp("2026-03-01"))
 
@@ -64,6 +44,7 @@ class TestCox(unittest.TestCase):
         self.assertTrue(set(panel["event"].unique()).issubset({0, 1}))
 
     def test_prepare_time_varying_model_data_returns_expected_parts(self):
+        """Test that preparing time-varying data returns a correctly shaped dataframe."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         panel = build_time_varying_panel(joined, pd.Timestamp("2026-03-01"))
 
@@ -79,6 +60,7 @@ class TestCox(unittest.TestCase):
         self.assertGreater(len(prepared.feature_selection.kept_columns), 0)
 
     def test_build_business_level_dataset_has_required_columns(self):
+        """Test that the business-level dataset includes duration and event columns."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         coxph_df = build_business_level_dataset(joined, pd.Timestamp("2026-03-01"))
 
@@ -89,6 +71,7 @@ class TestCox(unittest.TestCase):
         self.assertTrue(set(coxph_df["event"].unique()).issubset({0, 1}))
 
     def test_get_feature_columns_excludes_requested_columns(self):
+        """Test that feature column extraction properly excludes specified columns."""
         df = pd.DataFrame(
             {
                 "business_id": ["A", "B"],
@@ -105,6 +88,7 @@ class TestCox(unittest.TestCase):
         self.assertEqual(feature_columns, ["x1", "x2"])
 
     def test_select_nonconstant_features_drops_constant_columns(self):
+        """Test that constant features are dropped by variance thresholding."""
         df = pd.DataFrame(
             {
                 "signal": [0.0, 1.0, 0.0, 1.0],
@@ -123,6 +107,7 @@ class TestCox(unittest.TestCase):
         self.assertIn("constant", selection.dropped_columns)
 
     def test_scale_features_returns_scaled_df_and_scaler(self):
+        """Test that scaling returns a normalized dataframe and the fitted scaler."""
         df = pd.DataFrame(
             {
                 "x1": [1.0, 2.0, 3.0],
@@ -137,6 +122,7 @@ class TestCox(unittest.TestCase):
         self.assertIsInstance(scaler, StandardScaler)
 
     def test_prepare_business_level_model_data_returns_expected_parts(self):
+        """Test that preparing business-level data returns scaled features."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         coxph_df = build_business_level_dataset(joined, pd.Timestamp("2026-03-01"))
 
@@ -151,6 +137,7 @@ class TestCox(unittest.TestCase):
         self.assertGreater(len(prepared.feature_selection.kept_columns), 0)
 
     def test_fit_standard_cox_model_returns_fitter(self):
+        """Test that fitting a standard Cox model returns a CoxPHFitter instance."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         coxph_df = build_business_level_dataset(joined, pd.Timestamp("2026-03-01"))
         prepared = prepare_business_level_model_data(
@@ -167,6 +154,7 @@ class TestCox(unittest.TestCase):
         self.assertTrue(hasattr(model, "summary"))
 
     def test_build_coefficient_summary_returns_sorted_df(self):
+        """Test that building a coefficient summary returns a sorted dataframe."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
         coxph_df = build_business_level_dataset(joined, pd.Timestamp("2026-03-01"))
         prepared = prepare_business_level_model_data(
@@ -186,6 +174,7 @@ class TestCox(unittest.TestCase):
         self.assertIn("abs_coef", summary.columns)
 
     def test_run_standard_cox_pipeline_writes_artifacts(self):
+        """Test that running the standard Cox pipeline writes expected artifact files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
 

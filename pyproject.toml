@@ -15,7 +15,9 @@ dependencies = [
     "scikit-learn==1.6.1",
     "streamlit",
     "scipy",
-    "lifelines"
+    "lifelines",
+    "flask",
+    "plotly"
 ]
 
 [project.optional-dependencies]
@@ -27,4 +29,4 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["pipeline"]
+packages = ["pipeline", "map"]

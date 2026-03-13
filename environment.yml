@@ -7,6 +7,4 @@ dependencies:
   - scikit-learn==1.6.1
   - pip
   - pip:
-    # This tells conda to look at your pyproject.toml and install 
-    # everything listed there, including the 'dev' tools!
     - -e .[dev]

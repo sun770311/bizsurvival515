@@ -2,7 +2,7 @@ name: Build and Tests
 
 on:
   push:
-    branches: [ "main", "toml_file" ]
+    branches: [ "main", "toml_file", "mapbox"]
   pull_request:
     branches: [ "main" ]
 
@@ -35,8 +35,9 @@ jobs:
           conda list
 
       - name: Run Pylint
+        # This will now strictly enforce a 10/10 score. If it fails, the CI fails!
         run: |
-          pylint pipeline tests || echo "Pylint failed but continuing for now to see test results"
+          pylint pipeline map tests
 
       - name: Run Unittest & Coverage
         run: |
