@@ -8,7 +8,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.utils.ui_styles import apply_shared_styles
+from utils.ui_styles import apply_shared_styles
 
 
 st.set_page_config(
