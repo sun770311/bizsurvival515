@@ -29,4 +29,4 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["pipeline", "map"]
+packages = ["pipeline", "app"]
