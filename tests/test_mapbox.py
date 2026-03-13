@@ -1,4 +1,3 @@
-# pylint: disable=duplicate-code
 """Unit tests for the GeoJSON mapbox pipeline."""
 
 from pathlib import Path
@@ -9,21 +8,20 @@ import unittest
 import pandas as pd
 
 from pipeline.mapbox import (
+    GeoBounds,
     GeoJSONConfig,
     VALID_BOROUGHS,
     build_business_license_metadata,
     build_business_summary,
     build_feature,
-    build_full_address,
     build_geojson,
     build_geojson_features,
-    clean_joined_business_ids,
-    clean_license_fields,
     filter_nyc_license_coordinates,
     filter_valid_boroughs,
     load_joined_dataset,
     load_licenses_dataset,
     merge_business_summary_with_license_metadata,
+    prepare_geojson_inputs,
     run_geojson_pipeline,
     validate_joined_dataset,
     validate_licenses_dataset,
@@ -77,22 +75,16 @@ def prepare_clean_inputs() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load, validate, and clean joined and license inputs for tests."""
     joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
     licenses = load_licenses_dataset(TEST_DATA_DIR / "licenses_sample.csv")
-
-    validate_joined_dataset(joined)
-    validate_licenses_dataset(licenses)
-
-    joined = clean_joined_business_ids(joined)
-    licenses = clean_license_fields(licenses)
-    licenses = build_full_address(licenses)
-    licenses = filter_valid_boroughs(licenses)
-    licenses = filter_nyc_license_coordinates(
+    return prepare_geojson_inputs(
+        joined=joined,
         licenses=licenses,
-        lat_min=NYC_LAT_MIN,
-        lat_max=NYC_LAT_MAX,
-        lng_min=NYC_LNG_MIN,
-        lng_max=NYC_LNG_MAX,
+        bounds=GeoBounds(
+            lat_min=NYC_LAT_MIN,
+            lat_max=NYC_LAT_MAX,
+            lng_min=NYC_LNG_MIN,
+            lng_max=NYC_LNG_MAX,
+        ),
     )
-    return joined, licenses
 
 
 def build_expected_coords(licenses: pd.DataFrame) -> pd.DataFrame:
@@ -398,6 +390,14 @@ class TestMapbox(unittest.TestCase):
 
         assert_summary_matches_geojson(self, features_df, expected_summary)
         assert_coordinates_match_geojson(self, features_df, expected_coords)
+
+    def test_build_geojson_with_no_features(self):
+        """Build an empty FeatureCollection when there are no features."""
+        geojson = build_geojson([])
+
+        self.assertEqual(geojson["type"], "FeatureCollection")
+        self.assertIn("features", geojson)
+        self.assertEqual(geojson["features"], [])
 
 
 if __name__ == "__main__":

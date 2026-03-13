@@ -30,6 +30,12 @@ import pandas as pd
 
 DEFAULT_TIMES = [12, 24, 36, 60, 120]
 LICENSE_COUNT_OVERRIDE = 5
+REQUIRED_HYPOTHETICAL_FEATURES = [
+    "business_category_electronics_store",
+    "business_category_electronic_cigarette_dealer",
+    "business_category_bingo_game_operator",
+    "active_license_count",
+]
 
 
 @dataclass(frozen=True)
@@ -91,7 +97,8 @@ def zero_out_category_columns(profile: pd.DataFrame) -> pd.DataFrame:
     """Zero out all business category columns for controlled category testing."""
     updated = profile.copy()
     category_columns = [
-        column for column in updated.columns
+        column
+        for column in updated.columns
         if column.startswith("business_category_")
         and column != "business_category_sum"
     ]
@@ -294,12 +301,7 @@ def run_directional_tests(config: InspectCoxConfig) -> pd.DataFrame:
 
     validate_feature_availability(
         kept_columns=kept_columns,
-        required_features=[
-            "business_category_electronics_store",
-            "business_category_electronic_cigarette_dealer",
-            "business_category_bingo_game_operator",
-            "active_license_count",
-        ],
+        required_features=REQUIRED_HYPOTHETICAL_FEATURES,
     )
 
     baseline_profile = build_baseline_profile(joined, kept_columns)

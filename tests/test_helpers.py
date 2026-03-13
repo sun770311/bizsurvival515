@@ -4,7 +4,12 @@ Shared assertion helpers for unit tests.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
+
+
+TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 def assert_nearest_cluster_case(
@@ -33,3 +38,18 @@ def assert_clamp_case(
     lat, lng = clamp_fn(50.0, -80.0)
     test_case.assertEqual(lat, lat_max)
     test_case.assertEqual(lng, lng_min)
+
+
+def assert_month_column_parsed(
+    test_case,
+    df: pd.DataFrame,
+    column_name: str = "month",
+) -> None:
+    """Assert that a dataframe contains a parsed datetime month column."""
+    test_case.assertIn(column_name, df.columns)
+    test_case.assertTrue(pd.api.types.is_datetime64_any_dtype(df[column_name]))
+
+
+def make_duplicate_business_month_row(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a dataframe with one duplicated first row appended."""
+    return pd.concat([df, df.iloc[[0]]], ignore_index=True)

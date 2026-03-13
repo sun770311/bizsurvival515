@@ -1,8 +1,6 @@
-# pylint: disable=duplicate-code
 """Unit tests for the logistic regression training pipeline."""
 
 from pathlib import Path
-import tempfile
 import unittest
 
 import pandas as pd
@@ -31,9 +29,8 @@ from pipeline.logistic import (
     train_test_split_balanced,
     validate_joined_dataset,
 )
-
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
+from tests.pipeline_test_helpers import fitted_logistic_output_dir
+from tests.test_helpers import TEST_DATA_DIR, assert_month_column_parsed
 
 
 class TestLogistic(unittest.TestCase):
@@ -42,17 +39,8 @@ class TestLogistic(unittest.TestCase):
     def test_load_and_validate_joined_dataset(self):
         """Load the joined dataset, verify month parsing, and validate it."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        self.assertIn("month", joined.columns)
-        self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
+        assert_month_column_parsed(self, joined)
         validate_joined_dataset(joined)
-
-    def test_validate_joined_dataset_rejects_duplicate_rows(self):
-        """Reject joined datasets with duplicate business_id-month rows."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        duplicated = pd.concat([joined, joined.iloc[[0]]], ignore_index=True)
-
-        with self.assertRaisesRegex(ValueError, "Duplicate business_id-month rows"):
-            validate_joined_dataset(duplicated)
 
     def test_restrict_to_study_window_filters_future_rows(self):
         """Filter out rows whose month falls after the study end."""
@@ -353,15 +341,13 @@ class TestLogistic(unittest.TestCase):
 
     def test_run_logistic_pipeline_writes_artifacts(self):
         """Run the logistic pipeline end to end and write expected artifacts."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp_path = Path(tmpdir)
-
-            config = LogisticConfig(
-                data_path=TEST_DATA_DIR / "joined_dataset.csv",
-                output_dir=tmp_path,
+        with fitted_logistic_output_dir() as tmp_path:
+            summary = run_logistic_pipeline(
+                LogisticConfig(
+                    data_path=TEST_DATA_DIR / "joined_dataset.csv",
+                    output_dir=tmp_path,
+                )
             )
-
-            summary = run_logistic_pipeline(config)
 
             self.assertIn("metrics", summary)
             self.assertIn("artifact_paths", summary)

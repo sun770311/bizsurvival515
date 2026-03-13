@@ -37,6 +37,26 @@ RADIUS_METERS = 50
 EARTH_RADIUS_METERS = 6_371_000
 RADIUS_RADIANS = RADIUS_METERS / EARTH_RADIUS_METERS
 
+LICENSE_SOURCE_COLUMNS = [
+    "License Number",
+    "Business Unique ID",
+    "Business Category",
+    "License Type",
+    "License Status",
+    "Initial Issuance Date",
+    "Expiration Date",
+    "Latitude",
+    "Longitude",
+]
+
+SERVICE_REQUEST_SOURCE_COLUMNS = [
+    "Unique Key",
+    "Created Date",
+    "Problem (formerly Complaint Type)",
+    "Latitude",
+    "Longitude",
+]
+
 
 @dataclass(frozen=True)
 class PipelineConfig:
@@ -87,28 +107,12 @@ def load_source_data(
     """Load required columns from source CSV files."""
     licenses = pd.read_csv(
         licenses_path,
-        usecols=[
-            "License Number",
-            "Business Unique ID",
-            "Business Category",
-            "License Type",
-            "License Status",
-            "Initial Issuance Date",
-            "Expiration Date",
-            "Latitude",
-            "Longitude",
-        ],
+        usecols=LICENSE_SOURCE_COLUMNS,
     )
 
     service_reqs = pd.read_csv(
         service_reqs_path,
-        usecols=[
-            "Unique Key",
-            "Created Date",
-            "Problem (formerly Complaint Type)",
-            "Latitude",
-            "Longitude",
-        ],
+        usecols=SERVICE_REQUEST_SOURCE_COLUMNS,
     )
 
     return licenses, service_reqs

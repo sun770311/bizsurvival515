@@ -1,9 +1,5 @@
-# pylint: disable=duplicate-code
 """Unit tests for logistic model inspection helpers."""
 
-from contextlib import contextmanager
-from pathlib import Path
-import tempfile
 import unittest
 
 import pandas as pd
@@ -17,31 +13,15 @@ from pipeline.inspect_logistic import (
     load_artifacts,
     predict_profiles,
 )
-from pipeline.logistic import LogisticConfig, run_logistic_pipeline
-
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
+from tests.pipeline_test_helpers import fitted_logistic_output_dir
 
 
 class TestInspectLogistic(unittest.TestCase):
     """Test suite for inspecting trained logistic model artifacts."""
 
-    @contextmanager
-    def logistic_artifacts_dir(self):
-        """Create a temporary artifact directory populated by the logistic pipeline."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp_path = Path(tmpdir)
-
-            config = LogisticConfig(
-                data_path=TEST_DATA_DIR / "joined_dataset.csv",
-                output_dir=tmp_path,
-            )
-            run_logistic_pipeline(config)
-            yield tmp_path
-
     def test_load_artifacts(self):
         """Load saved logistic artifacts and verify core object types."""
-        with self.logistic_artifacts_dir() as artifacts_dir:
+        with fitted_logistic_output_dir() as artifacts_dir:
             config = InspectConfig(artifacts_dir=artifacts_dir)
 
             pipeline, kept_columns, metrics, coef_summary, train_split = load_artifacts(
@@ -166,7 +146,7 @@ class TestInspectLogistic(unittest.TestCase):
 
     def test_predict_profiles_returns_valid_output(self):
         """Predict classes and probabilities for hypothetical profiles."""
-        with self.logistic_artifacts_dir() as artifacts_dir:
+        with fitted_logistic_output_dir() as artifacts_dir:
             config = InspectConfig(artifacts_dir=artifacts_dir)
             pipeline, kept_columns, _metrics, _coef_summary, train_split = (
                 load_artifacts(config)
@@ -346,7 +326,7 @@ class TestInspectLogistic(unittest.TestCase):
 
     def test_check_hypothetical_expectations_with_real_artifacts(self):
         """Run expectation checks end to end using real trained artifacts."""
-        with self.logistic_artifacts_dir() as artifacts_dir:
+        with fitted_logistic_output_dir() as artifacts_dir:
             config = InspectConfig(artifacts_dir=artifacts_dir)
             pipeline, kept_columns, _metrics, coef_summary, train_split = (
                 load_artifacts(config)

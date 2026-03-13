@@ -172,6 +172,40 @@ class TestFeatureBuilderUtils(unittest.TestCase):
             4.0,
         )
 
+    def test_build_logistic_profile_ignores_unknown_inputs(self):
+        """Ignore unknown category and complaint keys not present in kept columns."""
+        inputs = BusinessProfileInputs(
+            selected_category_columns=[
+                "business_category_alpha_first12m_max",
+                "business_category_not_in_model_first12m_max",
+            ],
+            active_license_count=2,
+            business_latitude=40.72,
+            business_longitude=-74.02,
+            complaint_counts={
+                "complaint_type_noise_first12m_sum": 4,
+                "complaint_type_unknown_first12m_sum": 9,
+            },
+        )
+
+        profile = build_logistic_profile(
+            kept_columns=self.kept_columns,
+            reference_df=self.reference_df,
+            inputs=inputs,
+        )
+
+        self.assertIn("business_category_alpha_first12m_max", profile.columns)
+        self.assertEqual(
+            profile.loc[0, "business_category_alpha_first12m_max"],
+            1.0,
+        )
+        self.assertEqual(
+            profile.loc[0, "complaint_type_noise_first12m_sum"],
+            4.0,
+        )
+        self.assertNotIn("business_category_not_in_model_first12m_max", profile.columns)
+        self.assertNotIn("complaint_type_unknown_first12m_sum", profile.columns)
+
     def test_clamp_to_nyc_bounds(self):
         """Test clamping of coordinates to NYC geographic bounds."""
         assert_clamp_case(self, clamp_to_nyc_bounds, NYC_LAT_MAX, NYC_LNG_MIN)

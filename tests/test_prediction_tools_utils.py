@@ -159,6 +159,18 @@ class TestPredictionToolsUtils(unittest.TestCase):
         self.assertEqual(result.loc[0, "partial_hazard"], 3.0)
         self.assertEqual(result.loc[1, "partial_hazard"], 7.0)
 
+    def test_predict_time_varying_cox_profiles_row_count(self):
+        """Return one result per input row for time-varying Cox profiles."""
+        results = predict_time_varying_cox_profiles(
+            model=DummyCoxModel(),
+            scaler=DummyScaler(),
+            kept_columns=self.kept_columns,
+            profiles_df=self.multi_profile_df,
+        )
+
+        self.assertEqual(len(results), len(self.multi_profile_df))
+        self.assertIn("partial_hazard", results.columns)
+
     def test_top_positive_negative(self):
         """Test extraction of top positive and negative coefficients."""
         summary_df = pd.DataFrame(

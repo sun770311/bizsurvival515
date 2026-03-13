@@ -1,15 +1,11 @@
-# pylint: disable=duplicate-code
 """Unit tests for Cox model inspection helpers."""
 
-from contextlib import contextmanager
-from pathlib import Path
-import tempfile
 import unittest
 
 import pandas as pd
 
-from pipeline.cox import CoxConfig, run_standard_cox_pipeline
 from pipeline.inspect_cox import (
+    REQUIRED_HYPOTHETICAL_FEATURES,
     build_baseline_profile,
     check_directional_expectations,
     compare_profile_to_baseline,
@@ -21,30 +17,16 @@ from pipeline.inspect_cox import (
     validate_feature_availability,
     zero_out_category_columns,
 )
-
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
+from tests.pipeline_test_helpers import fitted_cox_output_dir
+from tests.test_helpers import TEST_DATA_DIR, assert_month_column_parsed
 
 
 class TestInspectCox(unittest.TestCase):
     """Test suite for inspecting trained standard Cox model artifacts."""
 
-    @contextmanager
-    def cox_standard_artifacts_dir(self):
-        """Create a temporary artifact directory populated by the Cox pipeline."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp_path = Path(tmpdir)
-
-            config = CoxConfig(
-                data_path=TEST_DATA_DIR / "joined_dataset.csv",
-                output_dir=tmp_path,
-            )
-            run_standard_cox_pipeline(config)
-            yield tmp_path
-
     def test_load_artifacts(self):
         """Load saved Cox artifacts and verify required entries exist."""
-        with self.cox_standard_artifacts_dir() as artifact_dir:
+        with fitted_cox_output_dir() as artifact_dir:
             artifacts = load_artifacts(artifact_dir)
 
         self.assertIn("model", artifacts)
@@ -59,8 +41,7 @@ class TestInspectCox(unittest.TestCase):
     def test_load_joined_dataset_parses_month(self):
         """Load the joined dataset and parse the month column as datetime."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        self.assertIn("month", joined.columns)
-        self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
+        assert_month_column_parsed(self, joined)
 
     def test_build_baseline_profile_matches_kept_columns(self):
         """Build a one-row baseline profile aligned to kept feature columns."""
@@ -127,10 +108,7 @@ class TestInspectCox(unittest.TestCase):
         ):
             validate_feature_availability(
                 kept_columns=kept_columns,
-                required_features=[
-                    "business_category_electronics_store",
-                    "business_category_electronic_cigarette_dealer",
-                ],
+                required_features=REQUIRED_HYPOTHETICAL_FEATURES,
             )
 
     def test_get_feature_direction_positive(self):
@@ -187,7 +165,7 @@ class TestInspectCox(unittest.TestCase):
 
     def test_score_profiles_returns_expected_columns(self):
         """Score hypothetical profiles and return hazard and survival outputs."""
-        with self.cox_standard_artifacts_dir() as artifact_dir:
+        with fitted_cox_output_dir() as artifact_dir:
             artifacts = load_artifacts(artifact_dir)
             joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
 

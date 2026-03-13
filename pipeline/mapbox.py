@@ -337,11 +337,12 @@ def build_geojson(features: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
-    """Run the full GeoJSON generation pipeline and write the output file."""
-    joined = load_joined_dataset(config.joined_data_path)
-    licenses = load_licenses_dataset(config.licenses_path)
-
+def prepare_geojson_inputs(
+    joined: pd.DataFrame,
+    licenses: pd.DataFrame,
+    bounds: GeoBounds,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Validate and clean joined and license inputs for GeoJSON generation."""
     validate_joined_dataset(joined)
     validate_licenses_dataset(licenses)
 
@@ -351,10 +352,23 @@ def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
     licenses = filter_valid_boroughs(licenses)
     licenses = filter_nyc_license_coordinates(
         licenses=licenses,
-        lat_min=config.bounds.lat_min,
-        lat_max=config.bounds.lat_max,
-        lng_min=config.bounds.lng_min,
-        lng_max=config.bounds.lng_max,
+        lat_min=bounds.lat_min,
+        lat_max=bounds.lat_max,
+        lng_min=bounds.lng_min,
+        lng_max=bounds.lng_max,
+    )
+    return joined, licenses
+
+
+def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
+    """Run the full GeoJSON generation pipeline and write the output file."""
+    joined = load_joined_dataset(config.joined_data_path)
+    licenses = load_licenses_dataset(config.licenses_path)
+
+    joined, licenses = prepare_geojson_inputs(
+        joined=joined,
+        licenses=licenses,
+        bounds=config.bounds,
     )
 
     summary = build_business_summary(joined, cutoff_date=config.cutoff_date)

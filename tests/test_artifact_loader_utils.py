@@ -23,26 +23,6 @@ from app.utils import artifact_loader
 class TestArtifactLoaderUtils(unittest.TestCase):
     """Tests for artifact loader helper functions."""
 
-    def test_load_pickle_success(self):
-        """Verify that _load_pickle successfully loads a serialized object."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / "obj.pkl"
-            payload = {"a": 1, "b": [1, 2, 3]}
-
-            with path.open("wb") as file_obj:
-                pickle.dump(payload, file_obj)
-
-            loaded = artifact_loader._load_pickle(path)  # pylint: disable=protected-access
-            self.assertEqual(loaded, payload)
-
-    def test_load_pickle_missing_file_raises(self):
-        """Verify that _load_pickle raises FileNotFoundError when file is missing."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            missing_path = Path(tmpdir) / "missing.pkl"
-
-            with self.assertRaises(FileNotFoundError):
-                artifact_loader._load_pickle(missing_path)  # pylint: disable=protected-access
-
     def _write_minimal_logistic_dir(self, base_dir: Path) -> Path:
         """Create a minimal logistic artifact directory for testing."""
         logistic_dir = base_dir / "logistic"

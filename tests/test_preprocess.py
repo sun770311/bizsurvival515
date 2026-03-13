@@ -1,4 +1,3 @@
-# pylint: disable=duplicate-code
 """Unit tests for the preprocessing pipeline."""
 
 from pathlib import Path
@@ -8,6 +7,8 @@ import unittest
 import pandas as pd
 
 from pipeline.preprocess import (
+    LICENSE_SOURCE_COLUMNS,
+    SERVICE_REQUEST_SOURCE_COLUMNS,
     PipelineConfig,
     build_joined_dataset,
     clean_licenses,
@@ -179,6 +180,22 @@ class TestPreprocess(unittest.TestCase):
 
             written = pd.read_csv(output_path)
             self.assertFalse(written.empty)
+
+    def test_clean_licenses_empty_input(self):
+        """Return an empty dataframe when licenses input is empty."""
+        raw = pd.DataFrame(columns=LICENSE_SOURCE_COLUMNS)
+
+        cleaned = clean_licenses(raw)
+
+        self.assertTrue(cleaned.empty)
+
+    def test_clean_service_requests_empty_input(self):
+        """Return an empty dataframe when service-request input is empty."""
+        raw = pd.DataFrame(columns=SERVICE_REQUEST_SOURCE_COLUMNS)
+
+        cleaned = clean_service_requests(raw)
+
+        self.assertTrue(cleaned.empty)
 
 
 if __name__ == "__main__":

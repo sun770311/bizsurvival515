@@ -1,8 +1,5 @@
-# pylint: disable=duplicate-code
 """Unit tests for the Cox survival modeling pipeline."""
 
-from pathlib import Path
-import tempfile
 import unittest
 
 import pandas as pd
@@ -26,19 +23,15 @@ from pipeline.cox import (
     select_nonconstant_features,
     validate_joined_dataset,
 )
-
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
+from tests.pipeline_test_helpers import fitted_cox_output_dir
+from tests.test_helpers import (
+    TEST_DATA_DIR,
+    make_duplicate_business_month_row,
+)
 
 
 class TestCox(unittest.TestCase):
     """Test suite for Cox pipeline helpers and standard model training."""
-
-    def test_load_joined_dataset_parses_month_column(self):
-        """Load the joined dataset and parse the month column as datetime."""
-        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        self.assertIn("month", joined.columns)
-        self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
 
     def test_validate_joined_dataset_accepts_valid_data(self):
         """Accept a valid joined dataset without raising validation errors."""
@@ -48,7 +41,7 @@ class TestCox(unittest.TestCase):
     def test_validate_joined_dataset_rejects_duplicate_rows(self):
         """Reject joined datasets with duplicate business_id-month rows."""
         joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
-        duplicated = pd.concat([joined, joined.iloc[[0]]], ignore_index=True)
+        duplicated = make_duplicate_business_month_row(joined)
 
         with self.assertRaisesRegex(ValueError, "Duplicate business_id-month rows"):
             validate_joined_dataset(duplicated)
@@ -205,15 +198,13 @@ class TestCox(unittest.TestCase):
 
     def test_run_standard_cox_pipeline_writes_artifacts(self):
         """Run the standard Cox pipeline and write expected output artifacts."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp_path = Path(tmpdir)
-
-            config = CoxConfig(
-                data_path=TEST_DATA_DIR / "joined_dataset.csv",
-                output_dir=tmp_path,
+        with fitted_cox_output_dir() as tmp_path:
+            results = run_standard_cox_pipeline(
+                CoxConfig(
+                    data_path=TEST_DATA_DIR / "joined_dataset.csv",
+                    output_dir=tmp_path,
+                )
             )
-
-            results = run_standard_cox_pipeline(config)
 
             self.assertIn("artifact_paths", results)
             expected_files = [
