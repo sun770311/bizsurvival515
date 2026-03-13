@@ -52,6 +52,17 @@ st.markdown(
         box-shadow: 0 12px 35px rgba(0,0,0,0.25);
     }
 
+    .info-card a {
+        color: #9be7c4 !important;
+        text-decoration: none;
+        font-weight: 600;
+        margin-left: 6px;
+    }
+
+    .info-card a:hover {
+        text-decoration: underline;
+    }
+
     .info-card h4 {
         margin: 0 0 10px 0;
         font-size: 1.02rem;
@@ -285,7 +296,11 @@ with datasets_tab:
         st.markdown(
             """
             <div class="info-card">
-                <h4>Dataset 1: Issued Licenses</h4>
+                <h4>
+                    Dataset 1: Issued Licenses
+                    <a href="https://data.cityofnewyork.us/Business/Issued-Licenses/w7w3-xahh/about_data"
+                       target="_blank" rel="noopener noreferrer">[Link]</a>
+                </h4>
                 <p>
                     This dataset contains licensed businesses operating in New York City. 
                     It is updated weekly and includes key fields such as business identifiers, business name,
@@ -300,7 +315,11 @@ with datasets_tab:
         st.markdown(
             """
             <div class="info-card">
-                <h4>Dataset 2: 311 Service Requests</h4>
+                <h4>
+                    Dataset 2: 311 Service Requests
+                    <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2020-to-Present/erm2-nwe9/about_data"
+                       target="_blank" rel="noopener noreferrer">[Link]</a>
+                </h4>
                 <p>
                     This dataset contains over 20 million rows of resident-submitted complaints and service requests. 
                     It covers data from 2020 to the present and is updated daily. This dataset is much larger and includes 
@@ -359,6 +378,25 @@ with datasets_tab:
         """
     )
 
+    st.markdown("### Data Source Citation")
+
+    st.markdown(
+        """
+        Both datasets used in this project were obtained from
+        <a href="https://opendata.cityofnewyork.us/" target="_blank">
+        NYC Open Data</a>.
+
+        - Issued Licenses dataset:  
+        <a href="https://data.cityofnewyork.us/Business/Issued-Licenses/w7w3-xahh/about_data" target="_blank">
+        https://data.cityofnewyork.us/Business/Issued-Licenses/w7w3-xahh/about_data</a>
+
+        - 311 Service Requests dataset:  
+        <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2020-to-Present/erm2-nwe9/about_data" target="_blank">
+        https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2020-to-Present/erm2-nwe9/about_data</a>
+        """,
+        unsafe_allow_html=True,
+    )
+
 with about_tab:
     st.markdown(
         """
@@ -374,7 +412,7 @@ with about_tab:
                 If you find this project interesting or useful, please consider starring the repository on GitHub! ⭐ ⭐ 
             </p>
             <p>
-                <b>Authors:</b> Aaron Lee, Hannah Sun, Juan Pablo Reyes Martinez, Pavankumar Suresh, Sreeraj Parakkat
+                <b>Authors:</b> Hannah Sun, Juan Pablo Reyes Martinez, Sreeraj Parakkat, Pavankumar Suresh, Aaron Lee
             </p>
             <p>
                 A University of Washington MSDS DATA 515 project.
