@@ -1,3 +1,11 @@
+"""
+Unit tests for artifact loading utilities used in the Streamlit application.
+
+These tests validate that artifact loading helpers correctly deserialize
+model artifacts and datasets from disk and that the artifact directory
+structure is interpreted correctly.
+"""
+
 from __future__ import annotations
 
 import json
@@ -13,23 +21,30 @@ from app.utils import artifact_loader
 
 
 class TestArtifactLoaderUtils(unittest.TestCase):
+    """Tests for artifact loader helper functions."""
+
     def test_load_pickle_success(self):
+        """Verify that _load_pickle successfully loads a serialized object."""
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "obj.pkl"
             payload = {"a": 1, "b": [1, 2, 3]}
+
             with path.open("wb") as file_obj:
                 pickle.dump(payload, file_obj)
 
-            loaded = artifact_loader._load_pickle(path)
+            loaded = artifact_loader._load_pickle(path)  # pylint: disable=protected-access
             self.assertEqual(loaded, payload)
 
     def test_load_pickle_missing_file_raises(self):
+        """Verify that _load_pickle raises FileNotFoundError when file is missing."""
         with tempfile.TemporaryDirectory() as tmpdir:
             missing_path = Path(tmpdir) / "missing.pkl"
+
             with self.assertRaises(FileNotFoundError):
-                artifact_loader._load_pickle(missing_path)
+                artifact_loader._load_pickle(missing_path)  # pylint: disable=protected-access
 
     def _write_minimal_logistic_dir(self, base_dir: Path) -> Path:
+        """Create a minimal logistic artifact directory for testing."""
         logistic_dir = base_dir / "logistic"
         logistic_dir.mkdir(parents=True, exist_ok=True)
 
@@ -67,6 +82,7 @@ class TestArtifactLoaderUtils(unittest.TestCase):
         return logistic_dir
 
     def _write_minimal_standard_cox_dir(self, base_dir: Path) -> Path:
+        """Create a minimal standard Cox artifact directory."""
         cox_dir = base_dir / "cox_standard"
         cox_dir.mkdir(parents=True, exist_ok=True)
 
@@ -89,6 +105,7 @@ class TestArtifactLoaderUtils(unittest.TestCase):
         return cox_dir
 
     def _write_minimal_time_varying_cox_dir(self, base_dir: Path) -> Path:
+        """Create a minimal time-varying Cox artifact directory."""
         cox_dir = base_dir / "cox_time_varying"
         cox_dir.mkdir(parents=True, exist_ok=True)
 
@@ -111,6 +128,7 @@ class TestArtifactLoaderUtils(unittest.TestCase):
         return cox_dir
 
     def test_load_logistic_artifacts(self):
+        """Verify logistic artifacts are correctly loaded."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_dir = Path(tmpdir)
             logistic_dir = self._write_minimal_logistic_dir(base_dir)
@@ -123,13 +141,14 @@ class TestArtifactLoaderUtils(unittest.TestCase):
                 )
                 loaded = load_fn()
 
-            self.assertEqual(loaded["pipeline"], {"kind": "pipeline"})
-            self.assertEqual(loaded["kept_columns"], ["x1", "x2"])
-            self.assertEqual(loaded["dropped_columns"], ["x3"])
-            self.assertIn("feature", loaded["coef_summary"].columns)
-            self.assertEqual(loaded["metrics"]["accuracy"], 0.8)
+        self.assertEqual(loaded["pipeline"], {"kind": "pipeline"})
+        self.assertEqual(loaded["kept_columns"], ["x1", "x2"])
+        self.assertEqual(loaded["dropped_columns"], ["x3"])
+        self.assertIn("feature", loaded["coef_summary"].columns)
+        self.assertEqual(loaded["metrics"]["accuracy"], 0.8)
 
     def test_load_logistic_reference_data(self):
+        """Verify logistic reference datasets load correctly."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_dir = Path(tmpdir)
             logistic_dir = self._write_minimal_logistic_dir(base_dir)
@@ -142,12 +161,13 @@ class TestArtifactLoaderUtils(unittest.TestCase):
                 )
                 loaded = load_fn()
 
-            self.assertEqual(set(loaded.keys()), {"businesses", "x_train", "x_test"})
-            self.assertFalse(loaded["businesses"].empty)
-            self.assertFalse(loaded["x_train"].empty)
-            self.assertFalse(loaded["x_test"].empty)
+        self.assertEqual(set(loaded.keys()), {"businesses", "x_train", "x_test"})
+        self.assertFalse(loaded["businesses"].empty)
+        self.assertFalse(loaded["x_train"].empty)
+        self.assertFalse(loaded["x_test"].empty)
 
     def test_load_standard_cox_artifacts(self):
+        """Verify standard Cox artifacts load correctly."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_dir = Path(tmpdir)
             cox_dir = self._write_minimal_standard_cox_dir(base_dir)
@@ -160,13 +180,14 @@ class TestArtifactLoaderUtils(unittest.TestCase):
                 )
                 loaded = load_fn()
 
-            self.assertEqual(loaded["model"], {"kind": "cox_model"})
-            self.assertEqual(loaded["scaler"], {"kind": "cox_scaler"})
-            self.assertEqual(loaded["kept_columns"], ["active_license_count"])
-            self.assertEqual(loaded["dropped_columns"], ["unused_col"])
-            self.assertIn("feature", loaded["summary"].columns)
+        self.assertEqual(loaded["model"], {"kind": "cox_model"})
+        self.assertEqual(loaded["scaler"], {"kind": "cox_scaler"})
+        self.assertEqual(loaded["kept_columns"], ["active_license_count"])
+        self.assertEqual(loaded["dropped_columns"], ["unused_col"])
+        self.assertIn("feature", loaded["summary"].columns)
 
     def test_load_time_varying_cox_artifacts(self):
+        """Verify time-varying Cox artifacts load correctly."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_dir = Path(tmpdir)
             cox_dir = self._write_minimal_time_varying_cox_dir(base_dir)
@@ -179,11 +200,11 @@ class TestArtifactLoaderUtils(unittest.TestCase):
                 )
                 loaded = load_fn()
 
-            self.assertEqual(loaded["model"], {"kind": "tv_model"})
-            self.assertEqual(loaded["scaler"], {"kind": "tv_scaler"})
-            self.assertEqual(loaded["kept_columns"], ["active_license_count"])
-            self.assertEqual(loaded["dropped_columns"], ["unused_col"])
-            self.assertIn("feature", loaded["summary"].columns)
+        self.assertEqual(loaded["model"], {"kind": "tv_model"})
+        self.assertEqual(loaded["scaler"], {"kind": "tv_scaler"})
+        self.assertEqual(loaded["kept_columns"], ["active_license_count"])
+        self.assertEqual(loaded["dropped_columns"], ["unused_col"])
+        self.assertIn("feature", loaded["summary"].columns)
 
 
 if __name__ == "__main__":
