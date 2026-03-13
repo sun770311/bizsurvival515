@@ -37,7 +37,7 @@ jobs:
       - name: Run Pylint
         # This will now strictly enforce a 10/10 score. If it fails, the CI fails!
         run: |
-          pylint pipeline map tests
+          pylint app pipeline tests
 
       - name: Run Unittest & Coverage
         run: |
