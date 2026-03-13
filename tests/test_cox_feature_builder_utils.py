@@ -1,3 +1,4 @@
+# tests/test_cox_feature_builder_utils.py
 """
 Unit tests for Cox feature builder helper utilities.
 """
@@ -9,6 +10,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from pipeline.utils import LOCATION_FEATURE_COLUMNS
 from tests.test_helpers import assert_clamp_case, assert_nearest_cluster_case
 
 from app.utils.cox_feature_builder import (
@@ -60,11 +62,7 @@ class TestCoxFeatureBuilderUtils(unittest.TestCase):
         )
         self.kept_columns = [
             "active_license_count",
-            "business_latitude",
-            "business_longitude",
-            "location_cluster",
-            "location_cluster_lat",
-            "location_cluster_lng",
+            *LOCATION_FEATURE_COLUMNS,
             "business_category_alpha",
             "business_category_beta",
             "complaint_type_noise",

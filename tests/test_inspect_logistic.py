@@ -1,3 +1,7 @@
+# pylint: disable=duplicate-code
+"""Unit tests for logistic model inspection helpers."""
+
+from contextlib import contextmanager
 from pathlib import Path
 import tempfile
 import unittest
@@ -20,23 +24,29 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 class TestInspectLogistic(unittest.TestCase):
-    def create_logistic_artifacts_dir(self) -> Path:
-        tmpdir = tempfile.TemporaryDirectory()
-        self.addCleanup(tmpdir.cleanup)
-        tmp_path = Path(tmpdir.name)
+    """Test suite for inspecting trained logistic model artifacts."""
 
-        config = LogisticConfig(
-            data_path=TEST_DATA_DIR / "joined_dataset.csv",
-            output_dir=tmp_path,
-        )
-        run_logistic_pipeline(config)
-        return tmp_path
+    @contextmanager
+    def logistic_artifacts_dir(self):
+        """Create a temporary artifact directory populated by the logistic pipeline."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+
+            config = LogisticConfig(
+                data_path=TEST_DATA_DIR / "joined_dataset.csv",
+                output_dir=tmp_path,
+            )
+            run_logistic_pipeline(config)
+            yield tmp_path
 
     def test_load_artifacts(self):
-        artifacts_dir = self.create_logistic_artifacts_dir()
-        config = InspectConfig(artifacts_dir=artifacts_dir)
+        """Load saved logistic artifacts and verify core object types."""
+        with self.logistic_artifacts_dir() as artifacts_dir:
+            config = InspectConfig(artifacts_dir=artifacts_dir)
 
-        pipeline, kept_columns, metrics, coef_summary, train_split = load_artifacts(config)
+            pipeline, kept_columns, metrics, coef_summary, train_split = load_artifacts(
+                config
+            )
 
         self.assertIsNotNone(pipeline)
         self.assertIsInstance(kept_columns, list)
@@ -51,6 +61,7 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertFalse(train_split.empty)
 
     def test_build_baseline_profile(self):
+        """Build a one-row baseline profile from training medians."""
         kept_columns = ["a", "b", "c"]
         train_split = pd.DataFrame(
             {
@@ -70,6 +81,7 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertEqual(baseline.loc["baseline", "c"], 20.0)
 
     def test_build_hypothetical_profiles_contains_baseline(self):
+        """Build the expected set of named hypothetical profiles."""
         kept_columns = [
             "active_license_count_first12m_mean",
             "business_category_electronics_store_first12m_max",
@@ -99,6 +111,7 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertEqual(profiles.shape[1], len(kept_columns))
 
     def test_build_hypothetical_profiles_sets_expected_feature_values(self):
+        """Set activated features to the expected hypothetical profile values."""
         kept_columns = [
             "active_license_count_first12m_mean",
             "business_category_electronics_store_first12m_max",
@@ -111,7 +124,11 @@ class TestInspectLogistic(unittest.TestCase):
                 "active_license_count_first12m_mean": [2.0, 2.0, 2.0],
                 "business_category_electronics_store_first12m_max": [0.0, 0.0, 0.0],
                 "business_category_industrial_laundry_first12m_max": [0.0, 0.0, 0.0],
-                "business_category_home_improvement_contractor_first12m_max": [0.0, 0.0, 0.0],
+                "business_category_home_improvement_contractor_first12m_max": [
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
             }
         )
 
@@ -122,7 +139,10 @@ class TestInspectLogistic(unittest.TestCase):
             2.0,
         )
         self.assertEqual(
-            profiles.loc["electronics_store", "business_category_electronics_store_first12m_max"],
+            profiles.loc[
+                "electronics_store",
+                "business_category_electronics_store_first12m_max",
+            ],
             1.0,
         )
         self.assertEqual(
@@ -130,7 +150,10 @@ class TestInspectLogistic(unittest.TestCase):
             5.0,
         )
         self.assertEqual(
-            profiles.loc["industrial_laundry", "business_category_industrial_laundry_first12m_max"],
+            profiles.loc[
+                "industrial_laundry",
+                "business_category_industrial_laundry_first12m_max",
+            ],
             1.0,
         )
         self.assertEqual(
@@ -142,12 +165,15 @@ class TestInspectLogistic(unittest.TestCase):
         )
 
     def test_predict_profiles_returns_valid_output(self):
-        artifacts_dir = self.create_logistic_artifacts_dir()
-        config = InspectConfig(artifacts_dir=artifacts_dir)
-        pipeline, kept_columns, _metrics, _coef_summary, train_split = load_artifacts(config)
+        """Predict classes and probabilities for hypothetical profiles."""
+        with self.logistic_artifacts_dir() as artifacts_dir:
+            config = InspectConfig(artifacts_dir=artifacts_dir)
+            pipeline, kept_columns, _metrics, _coef_summary, train_split = (
+                load_artifacts(config)
+            )
 
-        profiles = build_hypothetical_profiles(kept_columns, train_split)
-        results = predict_profiles(pipeline, profiles)
+            profiles = build_hypothetical_profiles(kept_columns, train_split)
+            results = predict_profiles(pipeline, profiles)
 
         self.assertFalse(results.empty)
         self.assertEqual(
@@ -163,6 +189,7 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertTrue(set(results["predicted_class"].unique()).issubset({0, 1}))
 
     def test_get_coefficient_direction_positive(self):
+        """Return above-baseline when the coefficient is positive."""
         coef_summary = pd.DataFrame(
             {
                 "feature": ["x1"],
@@ -172,6 +199,7 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertEqual(get_coefficient_direction(coef_summary, "x1"), "above_baseline")
 
     def test_get_coefficient_direction_negative(self):
+        """Return below-baseline when the coefficient is negative."""
         coef_summary = pd.DataFrame(
             {
                 "feature": ["x1"],
@@ -181,15 +209,20 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertEqual(get_coefficient_direction(coef_summary, "x1"), "below_baseline")
 
     def test_get_coefficient_direction_zero(self):
+        """Return same-as-baseline when the coefficient is zero."""
         coef_summary = pd.DataFrame(
             {
                 "feature": ["x1"],
                 "coefficient": [0.0],
             }
         )
-        self.assertEqual(get_coefficient_direction(coef_summary, "x1"), "same_as_baseline")
+        self.assertEqual(
+            get_coefficient_direction(coef_summary, "x1"),
+            "same_as_baseline",
+        )
 
     def test_get_coefficient_direction_missing(self):
+        """Return feature-missing when the requested feature is absent."""
         coef_summary = pd.DataFrame(
             {
                 "feature": ["x1"],
@@ -202,6 +235,7 @@ class TestInspectLogistic(unittest.TestCase):
         )
 
     def test_check_hypothetical_expectations_returns_expected_columns(self):
+        """Compare hypothetical profiles against coefficient-based expectations."""
         results = pd.DataFrame(
             {
                 "profile": [
@@ -214,7 +248,16 @@ class TestInspectLogistic(unittest.TestCase):
                     "debt_collection",
                     "home_improvement_contractor",
                 ],
-                "predicted_survival_probability": [0.50, 0.40, 0.65, 0.60, 0.70, 0.58, 0.45, 0.68],
+                "predicted_survival_probability": [
+                    0.50,
+                    0.40,
+                    0.65,
+                    0.60,
+                    0.70,
+                    0.58,
+                    0.45,
+                    0.68,
+                ],
                 "predicted_class": [1, 0, 1, 1, 1, 1, 0, 1],
             }
         )
@@ -250,6 +293,7 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertEqual(len(expectation_results), 7)
 
     def test_check_hypothetical_expectations_with_feature_missing(self):
+        """Mark expectation checks as missing when a feature is absent."""
         results = pd.DataFrame(
             {
                 "profile": [
@@ -262,7 +306,16 @@ class TestInspectLogistic(unittest.TestCase):
                     "debt_collection",
                     "home_improvement_contractor",
                 ],
-                "predicted_survival_probability": [0.50, 0.40, 0.65, 0.60, 0.70, 0.58, 0.45, 0.68],
+                "predicted_survival_probability": [
+                    0.50,
+                    0.40,
+                    0.65,
+                    0.60,
+                    0.70,
+                    0.58,
+                    0.45,
+                    0.68,
+                ],
                 "predicted_class": [1, 0, 1, 1, 1, 1, 0, 1],
             }
         )
@@ -292,13 +345,19 @@ class TestInspectLogistic(unittest.TestCase):
         self.assertFalse(bool(industrial_row["matches_expectation"]))
 
     def test_check_hypothetical_expectations_with_real_artifacts(self):
-        artifacts_dir = self.create_logistic_artifacts_dir()
-        config = InspectConfig(artifacts_dir=artifacts_dir)
-        pipeline, kept_columns, _metrics, coef_summary, train_split = load_artifacts(config)
+        """Run expectation checks end to end using real trained artifacts."""
+        with self.logistic_artifacts_dir() as artifacts_dir:
+            config = InspectConfig(artifacts_dir=artifacts_dir)
+            pipeline, kept_columns, _metrics, coef_summary, train_split = (
+                load_artifacts(config)
+            )
 
-        profiles = build_hypothetical_profiles(kept_columns, train_split)
-        results = predict_profiles(pipeline, profiles)
-        expectation_results = check_hypothetical_expectations(results, coef_summary)
+            profiles = build_hypothetical_profiles(kept_columns, train_split)
+            results = predict_profiles(pipeline, profiles)
+            expectation_results = check_hypothetical_expectations(
+                results,
+                coef_summary,
+            )
 
         self.assertFalse(expectation_results.empty)
         self.assertIn("matches_expectation", expectation_results.columns)

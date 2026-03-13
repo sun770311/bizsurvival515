@@ -20,9 +20,8 @@ Outputs:
 
 from __future__ import annotations
 
-import argparse
 import json
-import pickle
+import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -43,22 +42,31 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 
+from pipeline.utils import (
+    STUDY_END,
+    VARIANCE_THRESHOLD,
+    FeatureSelectionResult,
+    add_standard_modeling_args,
+    load_joined_dataset,
+    restrict_to_study_window,
+    save_dataframe_artifact,
+    save_json_artifact,
+    save_pickle_artifact,
+    validate_joined_dataset,
+)
 
-STUDY_END = pd.Timestamp("2026-03-01")
+
 SURVIVAL_MONTHS = 36
 AGGREGATION_MONTHS = 12
-VARIANCE_THRESHOLD = 1e-8
 TEST_SIZE = 0.2
 RANDOM_STATE = 42
 MAX_ITER = 5000
 
 
 @dataclass(frozen=True)
-class LogisticConfig:
-    """Configuration for logistic survival modeling pipeline."""
+class LogisticModelSettings:
+    """Tunable settings for logistic survival modeling."""
 
-    data_path: Path
-    output_dir: Path
     study_end: pd.Timestamp = STUDY_END
     survival_months: int = SURVIVAL_MONTHS
     aggregation_months: int = AGGREGATION_MONTHS
@@ -69,11 +77,22 @@ class LogisticConfig:
 
 
 @dataclass(frozen=True)
-class FeatureSelectionResult:
-    """Container for retained and dropped feature names."""
+class LogisticConfig:
+    """Configuration for logistic survival modeling pipeline."""
 
-    kept_columns: list[str]
-    dropped_columns: list[str]
+    data_path: Path
+    output_dir: Path
+    settings: LogisticModelSettings = LogisticModelSettings()
+
+
+@dataclass(frozen=True)
+class DatasetSplit:
+    """Container for train/test feature and target splits."""
+
+    features_train: pd.DataFrame
+    features_test: pd.DataFrame
+    target_train: pd.Series
+    target_test: pd.Series
 
 
 @dataclass(frozen=True)
@@ -81,59 +100,27 @@ class PreparedTrainingData:
     """Container for prepared datasets used in modeling."""
 
     training_df: pd.DataFrame
-    X: pd.DataFrame
-    y: pd.Series
+    feature_df: pd.DataFrame
+    target: pd.Series
     balanced_df: pd.DataFrame
-    X_train: pd.DataFrame
-    X_test: pd.DataFrame
-    y_train: pd.Series
-    y_test: pd.Series
+    split: DatasetSplit
     feature_selection: FeatureSelectionResult
 
-
-def load_joined_dataset(data_path: Path) -> pd.DataFrame:
-    """Load joined dataset and parse month column."""
-    joined = pd.read_csv(data_path)
-    joined["month"] = pd.to_datetime(joined["month"], errors="coerce")
-    return joined
-
-
-def validate_joined_dataset(joined: pd.DataFrame) -> None:
-    """Validate required columns and uniqueness of panel rows."""
-    required_columns = [
-        "business_id",
-        "month",
-        "active_license_count",
-        "total_311",
-        "open",
-        "months_since_first_license",
-        "location_cluster",
-        "location_cluster_lat",
-        "location_cluster_lng",
-        "business_latitude",
-        "business_longitude",
-        "business_category_sum",
-        "complaint_sum",
-    ]
-    missing_columns = [column for column in required_columns if column not in joined.columns]
-    if missing_columns:
-        raise ValueError(f"Missing required columns: {missing_columns}")
-
-    if joined["month"].isna().any():
-        raise ValueError("Some month values could not be parsed as datetimes.")
-
-    if joined.duplicated(["business_id", "month"]).any():
-        raise ValueError("Duplicate business_id-month rows found in joined dataset.")
-
-
-def restrict_to_study_window(
-    joined: pd.DataFrame,
-    study_end: pd.Timestamp,
-) -> pd.DataFrame:
-    """Restrict panel rows to the study window."""
-    df = joined.copy()
-    df = df.loc[df["month"] <= study_end].copy()
-    return df
+    def __getattr__(self, name: str) -> object:
+        """Provide backward-compatible attribute aliases."""
+        legacy_mapping = {
+            "X": self.feature_df,
+            "y": self.target,
+            "X_train": self.split.features_train,
+            "X_test": self.split.features_test,
+            "y_train": self.split.target_train,
+            "y_test": self.split.target_test,
+        }
+        if name in legacy_mapping:
+            return legacy_mapping[name]
+        raise AttributeError(
+            f"{self.__class__.__name__!r} object has no attribute {name!r}"
+        )
 
 
 def build_business_survival_summary(
@@ -171,7 +158,7 @@ def filter_eligible_businesses(
     survival_months: int,
     aggregation_months: int,
 ) -> pd.DataFrame:
-    """Keep businesses with a full first-year window and enough horizon to score survival.
+    """Keep businesses with a full first-year window and enough horizon.
 
     This creates a first-year-profile modeling cohort:
     - business must have entered early enough to evaluate 36-month survival
@@ -180,7 +167,8 @@ def filter_eligible_businesses(
     """
     survival_cutoff = study_end - pd.DateOffset(months=survival_months)
     min_last_month_needed = (
-        business_survival["first_month"] + pd.DateOffset(months=aggregation_months - 1)
+        business_survival["first_month"]
+        + pd.DateOffset(months=aggregation_months - 1)
     )
 
     eligible = business_survival.loc[
@@ -221,40 +209,37 @@ def choose_aggregation(column_name: str, series: pd.Series) -> str:
         "location_cluster_lng",
         "location_cluster",
     }
-
     sum_columns = {
         "complaint_sum",
         "total_311",
     }
+    invalid_columns = {"business_id", "month", "row_num_within_business"}
 
-    if column_name in {"business_id", "month", "row_num_within_business"}:
-        raise ValueError(f"Aggregation should not be chosen for identifier column {column_name}.")
+    if column_name in invalid_columns:
+        raise ValueError(
+            f"Aggregation should not be chosen for identifier column {column_name}."
+        )
+
+    aggregation = "last"
 
     if column_name in static_first_columns:
-        return "first"
+        aggregation = "first"
+    elif column_name.startswith("business_category_"):
+        aggregation = "max"
+    elif column_name.startswith("complaint_type_"):
+        aggregation = "sum"
+    elif column_name in sum_columns:
+        aggregation = "sum"
+    elif column_name == "active_license_count":
+        aggregation = "mean"
+    elif column_name == "open":
+        aggregation = "max"
+    elif column_name == "months_since_first_license":
+        aggregation = "max"
+    elif is_binary_series(series):
+        aggregation = "max"
 
-    if column_name.startswith("business_category_"):
-        return "max"
-
-    if column_name.startswith("complaint_type_"):
-        return "sum"
-
-    if column_name in sum_columns:
-        return "sum"
-
-    if column_name == "active_license_count":
-        return "mean"
-
-    if column_name == "open":
-        return "max"
-
-    if column_name == "months_since_first_license":
-        return "max"
-
-    if is_binary_series(series):
-        return "max"
-
-    return "last"
+    return aggregation
 
 
 def aggregate_first_year_features(
@@ -274,24 +259,20 @@ def aggregate_first_year_features(
     for column in feature_columns:
         aggregation_map[column] = choose_aggregation(column, first_year[column])
 
-    aggregated = (
-        first_year.groupby("business_id", as_index=False)
-        .agg(aggregation_map)
-        .copy()
-    )
+    aggregated = first_year.groupby("business_id", as_index=False).agg(aggregation_map)
+    aggregated = aggregated.copy()
 
-    rename_map = {}
-    for column, agg_name in aggregation_map.items():
-        if agg_name == "sum":
-            rename_map[column] = f"{column}_first12m_sum"
-        elif agg_name == "mean":
-            rename_map[column] = f"{column}_first12m_mean"
-        elif agg_name == "max":
-            rename_map[column] = f"{column}_first12m_max"
-        elif agg_name == "last":
-            rename_map[column] = f"{column}_first12m_last"
-        elif agg_name == "first":
-            rename_map[column] = f"{column}_first12m_first"
+    rename_suffix_map = {
+        "sum": "sum",
+        "mean": "mean",
+        "max": "max",
+        "last": "last",
+        "first": "first",
+    }
+    rename_map = {
+        column: f"{column}_first12m_{rename_suffix_map[agg_name]}"
+        for column, agg_name in aggregation_map.items()
+    }
 
     aggregated = aggregated.rename(columns=rename_map)
 
@@ -352,7 +333,6 @@ def get_excluded_feature_columns() -> list[str]:
         "last_month",
         "duration_months",
         "survived_36m",
-        # leakage / target-adjacent columns intentionally excluded from fitting
         "months_since_first_license_first12m_max",
         "business_category_sum_first12m_max",
         "complaint_sum_first12m_sum",
@@ -370,32 +350,34 @@ def split_features_and_target(
     feature_columns = [
         column for column in training_df.columns if column not in excluded_columns
     ]
-    X = training_df[feature_columns].copy()
-    y = training_df["survived_36m"].copy()
-    return X, y
+    feature_df = training_df[feature_columns].copy()
+    target = training_df["survived_36m"].copy()
+    return feature_df, target
 
 
 def select_nonconstant_features(
-    X: pd.DataFrame,
+    feature_df: pd.DataFrame,
     variance_threshold: float,
 ) -> tuple[pd.DataFrame, FeatureSelectionResult]:
     """Remove near-constant features using variance thresholding."""
-    if X.empty:
+    if feature_df.empty:
         raise ValueError("Feature matrix is empty before variance filtering.")
 
     selector = VarianceThreshold(threshold=variance_threshold)
-    X_reduced = selector.fit_transform(X)
+    reduced_array = selector.fit_transform(feature_df)
 
-    kept_columns = X.columns[selector.get_support()].tolist()
-    dropped_columns = [column for column in X.columns if column not in kept_columns]
+    kept_columns = feature_df.columns[selector.get_support()].tolist()
+    dropped_columns = [
+        column for column in feature_df.columns if column not in kept_columns
+    ]
 
     if not kept_columns:
         raise ValueError("No features remain after low-variance filtering.")
 
     reduced_df = pd.DataFrame(
-        X_reduced,
+        reduced_array,
         columns=kept_columns,
-        index=X.index,
+        index=feature_df.index,
     )
 
     return reduced_df, FeatureSelectionResult(
@@ -405,13 +387,13 @@ def select_nonconstant_features(
 
 
 def balance_dataset(
-    X: pd.DataFrame,
-    y: pd.Series,
+    feature_df: pd.DataFrame,
+    target: pd.Series,
     random_state: int,
 ) -> pd.DataFrame:
     """Oversample minority class to match majority class size."""
-    full_df = X.copy()
-    full_df["survived_36m"] = y.values
+    full_df = feature_df.copy()
+    full_df["survived_36m"] = target.values
 
     class_counts = full_df["survived_36m"].value_counts()
     if class_counts.shape[0] < 2:
@@ -445,56 +427,65 @@ def train_test_split_balanced(
     random_state: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """Split balanced dataset into train and test partitions."""
-    X_balanced = balanced_df.drop(columns=["survived_36m"])
-    y_balanced = balanced_df["survived_36m"]
+    balanced_features = balanced_df.drop(columns=["survived_36m"])
+    balanced_target = balanced_df["survived_36m"]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_balanced,
-        y_balanced,
+    features_train, features_test, target_train, target_test = train_test_split(
+        balanced_features,
+        balanced_target,
         test_size=test_size,
         random_state=random_state,
-        stratify=y_balanced,
+        stratify=balanced_target,
     )
-    return X_train, X_test, y_train, y_test
+    return features_train, features_test, target_train, target_test
 
 
 def prepare_training_data(config: LogisticConfig) -> PreparedTrainingData:
     """Prepare business-level training data for logistic regression."""
     joined = load_joined_dataset(config.data_path)
     validate_joined_dataset(joined)
-    df = restrict_to_study_window(joined, config.study_end)
+    df = restrict_to_study_window(joined, config.settings.study_end)
 
     training_df = build_training_dataset(
         df=df,
-        study_end=config.study_end,
-        survival_months=config.survival_months,
-        aggregation_months=config.aggregation_months,
+        study_end=config.settings.study_end,
+        survival_months=config.settings.survival_months,
+        aggregation_months=config.settings.aggregation_months,
     )
-    X_raw, y = split_features_and_target(training_df)
-    X, feature_selection = select_nonconstant_features(
-        X=X_raw,
-        variance_threshold=config.variance_threshold,
+    raw_feature_df, target = split_features_and_target(training_df)
+    feature_df, feature_selection = select_nonconstant_features(
+        feature_df=raw_feature_df,
+        variance_threshold=config.settings.variance_threshold,
     )
     balanced_df = balance_dataset(
-        X=X,
-        y=y,
-        random_state=config.random_state,
+        feature_df=feature_df,
+        target=target,
+        random_state=config.settings.random_state,
     )
-    X_train, X_test, y_train, y_test = train_test_split_balanced(
+    (
+        features_train,
+        features_test,
+        target_train,
+        target_test,
+    ) = train_test_split_balanced(
         balanced_df=balanced_df,
-        test_size=config.test_size,
-        random_state=config.random_state,
+        test_size=config.settings.test_size,
+        random_state=config.settings.random_state,
+    )
+
+    split = DatasetSplit(
+        features_train=features_train,
+        features_test=features_test,
+        target_train=target_train,
+        target_test=target_test,
     )
 
     return PreparedTrainingData(
         training_df=training_df,
-        X=X,
-        y=y,
+        feature_df=feature_df,
+        target=target,
         balanced_df=balanced_df,
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
+        split=split,
         feature_selection=feature_selection,
     )
 
@@ -520,36 +511,66 @@ def build_logistic_pipeline(max_iter: int, random_state: int) -> Pipeline:
 
 
 def fit_logistic_model(
-    X_train: pd.DataFrame,
-    y_train: pd.Series,
-    max_iter: int,
-    random_state: int,
+    features_train: pd.DataFrame | None = None,
+    target_train: pd.Series | None = None,
+    max_iter: int = MAX_ITER,
+    random_state: int = RANDOM_STATE,
+    **legacy_kwargs: object,
 ) -> Pipeline:
     """Fit logistic regression pipeline."""
+    if features_train is None:
+        features_train = legacy_kwargs.pop("X_train", None)
+    if target_train is None:
+        target_train = legacy_kwargs.pop("y_train", None)
+
+    if legacy_kwargs:
+        unexpected = ", ".join(sorted(legacy_kwargs))
+        raise TypeError(f"Unexpected keyword argument(s): {unexpected}")
+
+    if features_train is None or target_train is None:
+        raise ValueError("Training features and target must both be provided.")
+
     pipeline = build_logistic_pipeline(
         max_iter=max_iter,
         random_state=random_state,
     )
-    pipeline.fit(X_train, y_train)
+    pipeline.fit(features_train, target_train)
     return pipeline
 
 
 def evaluate_model(
     pipeline: Pipeline,
-    X_test: pd.DataFrame,
-    y_test: pd.Series,
+    features_test: pd.DataFrame | None = None,
+    target_test: pd.Series | None = None,
+    **legacy_kwargs: object,
 ) -> dict[str, object]:
     """Evaluate logistic regression model on the test split."""
-    y_pred = pipeline.predict(X_test)
-    y_prob = pipeline.predict_proba(X_test)[:, 1]
+    if features_test is None:
+        features_test = legacy_kwargs.pop("X_test", None)
+    if target_test is None:
+        target_test = legacy_kwargs.pop("y_test", None)
 
-    accuracy = accuracy_score(y_test, y_pred)
-    roc_auc = roc_auc_score(y_test, y_prob)
-    conf_matrix = confusion_matrix(y_test, y_pred).tolist()
-    class_report = classification_report(y_test, y_pred, output_dict=True)
+    if legacy_kwargs:
+        unexpected = ", ".join(sorted(legacy_kwargs))
+        raise TypeError(f"Unexpected keyword argument(s): {unexpected}")
 
-    survivor_probs = y_prob[y_test == 1]
-    nonsurvivor_probs = y_prob[y_test == 0]
+    if features_test is None or target_test is None:
+        raise ValueError("Test features and target must both be provided.")
+
+    predicted_labels = pipeline.predict(features_test)
+    predicted_probabilities = pipeline.predict_proba(features_test)[:, 1]
+
+    accuracy = accuracy_score(target_test, predicted_labels)
+    roc_auc = roc_auc_score(target_test, predicted_probabilities)
+    conf_matrix = confusion_matrix(target_test, predicted_labels).tolist()
+    class_report = classification_report(
+        target_test,
+        predicted_labels,
+        output_dict=True,
+    )
+
+    survivor_probs = predicted_probabilities[target_test == 1]
+    nonsurvivor_probs = predicted_probabilities[target_test == 0]
 
     mannwhitney_stat, mannwhitney_p = mannwhitneyu(
         survivor_probs,
@@ -563,7 +584,9 @@ def evaluate_model(
         "confusion_matrix": conf_matrix,
         "classification_report": class_report,
         "mean_predicted_probability_survivors": float(np.mean(survivor_probs)),
-        "mean_predicted_probability_nonsurvivors": float(np.mean(nonsurvivor_probs)),
+        "mean_predicted_probability_nonsurvivors": float(
+            np.mean(nonsurvivor_probs)
+        ),
         "mannwhitney_u_statistic": float(mannwhitney_stat),
         "mannwhitney_p_value": float(mannwhitney_p),
     }
@@ -582,28 +605,11 @@ def build_coefficient_summary(
         }
     )
     coef_df["abs_coefficient"] = coef_df["coefficient"].abs()
-    coef_df = coef_df.sort_values("abs_coefficient", ascending=False).reset_index(drop=True)
+    coef_df = coef_df.sort_values(
+        "abs_coefficient",
+        ascending=False,
+    ).reset_index(drop=True)
     return coef_df
-
-
-def save_pickle_artifact(obj: object, output_path: Path) -> Path:
-    """Save object as pickle artifact."""
-    with output_path.open("wb") as file_obj:
-        pickle.dump(obj, file_obj)
-    return output_path
-
-
-def save_dataframe_artifact(df: pd.DataFrame, output_path: Path) -> Path:
-    """Save dataframe artifact as CSV."""
-    df.to_csv(output_path, index=False)
-    return output_path
-
-
-def save_json_artifact(payload: dict[str, object], output_path: Path) -> Path:
-    """Save dictionary artifact as JSON."""
-    with output_path.open("w", encoding="utf-8") as file_obj:
-        json.dump(payload, file_obj, indent=2)
-    return output_path
 
 
 def save_model_artifacts(
@@ -617,14 +623,14 @@ def save_model_artifacts(
 
     coefficient_summary = build_coefficient_summary(
         pipeline=pipeline,
-        feature_columns=prepared_data.X_train.columns.tolist(),
+        feature_columns=prepared_data.split.features_train.columns.tolist(),
     )
 
-    X_train_out = prepared_data.X_train.copy()
-    X_train_out["survived_36m"] = prepared_data.y_train.values
+    features_train_out = prepared_data.split.features_train.copy()
+    features_train_out["survived_36m"] = prepared_data.split.target_train.values
 
-    X_test_out = prepared_data.X_test.copy()
-    X_test_out["survived_36m"] = prepared_data.y_test.values
+    features_test_out = prepared_data.split.features_test.copy()
+    features_test_out["survived_36m"] = prepared_data.split.target_test.values
 
     artifact_paths = {
         "model_pipeline": save_pickle_artifact(
@@ -648,11 +654,11 @@ def save_model_artifacts(
             output_dir / "business_survival_balanced_dataset.csv",
         ),
         "train_split": save_dataframe_artifact(
-            X_train_out,
+            features_train_out,
             output_dir / "X_train_balanced_split.csv",
         ),
         "test_split": save_dataframe_artifact(
-            X_test_out,
+            features_test_out,
             output_dir / "X_test_balanced_split.csv",
         ),
         "evaluation_metrics": save_json_artifact(
@@ -667,15 +673,15 @@ def run_logistic_pipeline(config: LogisticConfig) -> dict[str, object]:
     """Run full logistic regression training and artifact-saving pipeline."""
     prepared_data = prepare_training_data(config)
     pipeline = fit_logistic_model(
-        X_train=prepared_data.X_train,
-        y_train=prepared_data.y_train,
-        max_iter=config.max_iter,
-        random_state=config.random_state,
+        features_train=prepared_data.split.features_train,
+        target_train=prepared_data.split.target_train,
+        max_iter=config.settings.max_iter,
+        random_state=config.settings.random_state,
     )
     metrics = evaluate_model(
         pipeline=pipeline,
-        X_test=prepared_data.X_test,
-        y_test=prepared_data.y_test,
+        features_test=prepared_data.split.features_test,
+        target_test=prepared_data.split.target_test,
     )
     artifact_paths = save_model_artifacts(
         prepared_data=prepared_data,
@@ -686,14 +692,14 @@ def run_logistic_pipeline(config: LogisticConfig) -> dict[str, object]:
 
     return {
         "training_shape": prepared_data.training_df.shape,
-        "feature_matrix_shape": prepared_data.X.shape,
+        "feature_matrix_shape": prepared_data.feature_df.shape,
         "balanced_shape": prepared_data.balanced_df.shape,
-        "train_shape": prepared_data.X_train.shape,
-        "test_shape": prepared_data.X_test.shape,
-        "aggregation_months": config.aggregation_months,
+        "train_shape": prepared_data.split.features_train.shape,
+        "test_shape": prepared_data.split.features_test.shape,
+        "aggregation_months": config.settings.aggregation_months,
         "n_kept_columns": len(prepared_data.feature_selection.kept_columns),
         "n_dropped_columns": len(prepared_data.feature_selection.dropped_columns),
-        "target_distribution_original": prepared_data.y.value_counts().to_dict(),
+        "target_distribution_original": prepared_data.target.value_counts().to_dict(),
         "target_distribution_balanced": (
             prepared_data.balanced_df["survived_36m"].value_counts().to_dict()
         ),
@@ -707,24 +713,7 @@ def parse_args() -> LogisticConfig:
     parser = argparse.ArgumentParser(
         description="Train logistic regression model for 3-year business survival."
     )
-    parser.add_argument(
-        "--data",
-        type=Path,
-        required=True,
-        help="Path to joined_dataset.csv",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        required=True,
-        help="Directory to save logistic model artifacts",
-    )
-    parser.add_argument(
-        "--study-end",
-        type=str,
-        default=str(STUDY_END.date()),
-        help="Study end date in YYYY-MM-DD format",
-    )
+    add_standard_modeling_args(parser)
     parser.add_argument(
         "--survival-months",
         type=int,
@@ -736,12 +725,6 @@ def parse_args() -> LogisticConfig:
         type=int,
         default=AGGREGATION_MONTHS,
         help="Number of first observed months to aggregate per business",
-    )
-    parser.add_argument(
-        "--variance-threshold",
-        type=float,
-        default=VARIANCE_THRESHOLD,
-        help="Variance threshold for feature filtering",
     )
     parser.add_argument(
         "--test-size",
@@ -767,13 +750,15 @@ def parse_args() -> LogisticConfig:
     return LogisticConfig(
         data_path=args.data,
         output_dir=args.output_dir,
-        study_end=pd.Timestamp(args.study_end),
-        survival_months=args.survival_months,
-        aggregation_months=args.aggregation_months,
-        variance_threshold=args.variance_threshold,
-        test_size=args.test_size,
-        random_state=args.random_state,
-        max_iter=args.max_iter,
+        settings=LogisticModelSettings(
+            study_end=pd.Timestamp(args.study_end),
+            survival_months=args.survival_months,
+            aggregation_months=args.aggregation_months,
+            variance_threshold=args.variance_threshold,
+            test_size=args.test_size,
+            random_state=args.random_state,
+            max_iter=args.max_iter,
+        ),
     )
 
 

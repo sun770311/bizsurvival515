@@ -91,7 +91,10 @@ def build_hypothetical_profiles(
         ("many_licenses", "active_license_count_first12m_mean", 5.0),
         ("industrial_laundry", "business_category_industrial_laundry_first12m_max", 1.0),
         ("debt_collection", "business_category_debt_collection_agency_first12m_max", 1.0),
-        ("home_improvement_contractor", "business_category_home_improvement_contractor_first12m_max", 1.0),
+        (
+            "home_improvement_contractor", 
+            "business_category_home_improvement_contractor_first12m_max", 
+            1.0),
     ]
 
     for profile_name, feature_name, feature_value in scenarios:
@@ -275,10 +278,14 @@ def print_top_coefficients(coef_summary: pd.DataFrame, top_n: int = 10) -> None:
     negative = coef_summary.sort_values("coefficient", ascending=True).head(top_n)
 
     print("\nTOP POSITIVE COEFFICIENTS\n")
-    print(positive[["feature", "coefficient"]].to_string(index=False, float_format=lambda x: f"{x:.6f}"))
+    print(
+        positive[["feature", "coefficient"]].to_string(
+            index=False, float_format=lambda x: f"{x:.6f}"))
 
     print("\nTOP NEGATIVE COEFFICIENTS\n")
-    print(negative[["feature", "coefficient"]].to_string(index=False, float_format=lambda x: f"{x:.6f}"))
+    print(
+        negative[["feature", "coefficient"]].to_string(
+            index=False, float_format=lambda x: f"{x:.6f}"))
 
 
 def run_inspection(config: InspectConfig) -> None:
