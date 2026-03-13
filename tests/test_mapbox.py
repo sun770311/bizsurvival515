@@ -1,4 +1,4 @@
-"""Tests for the Mapbox GeoJSON pipeline module."""
+"""Unit tests for the GeoJSON mapbox pipeline."""
 
 from pathlib import Path
 import json
@@ -7,27 +7,37 @@ import unittest
 
 import pandas as pd
 
-from pipeline.utils import load_joined_dataset, CUTOFF_DATE, VALID_BOROUGHS, NYC_BBOX
 from pipeline.mapbox import (
+    GeoBounds,
     GeoJSONConfig,
+    VALID_BOROUGHS,
     build_business_license_metadata,
     build_business_summary,
     build_feature,
-    build_full_address,
-    clean_joined_business_ids,
-    clean_license_fields,
+    build_geojson,
+    build_geojson_features,
+    filter_nyc_license_coordinates,
     filter_valid_boroughs,
+    load_joined_dataset,
     load_licenses_dataset,
     merge_business_summary_with_license_metadata,
+    prepare_geojson_inputs,
     run_geojson_pipeline,
+    validate_joined_dataset,
     validate_licenses_dataset,
 )
 
+
 TEST_DATA_DIR = Path(__file__).parent / "data"
+CUTOFF_DATE = pd.Timestamp("2026-03-01")
+NYC_LAT_MIN = 40.49
+NYC_LAT_MAX = 40.92
+NYC_LNG_MIN = -74.27
+NYC_LNG_MAX = -73.68
 
 
 def flatten_geojson_features(geojson: dict) -> pd.DataFrame:
-    """Flatten a GeoJSON dictionary into a pandas DataFrame for testing."""
+    """Flatten GeoJSON features into a tabular dataframe for assertions."""
     rows = []
 
     for feature in geojson.get("features", []):
@@ -54,42 +64,140 @@ def flatten_geojson_features(geojson: dict) -> pd.DataFrame:
 
     flattened = pd.DataFrame(rows)
     if not flattened.empty and "last_month" in flattened.columns:
-        flattened["last_month"] = pd.to_datetime(flattened["last_month"], errors="coerce")
+        flattened["last_month"] = pd.to_datetime(
+            flattened["last_month"],
+            errors="coerce",
+        )
     return flattened
 
 
 def prepare_clean_inputs() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load and clean input datasets for Mapbox testing."""
+    """Load, validate, and clean joined and license inputs for tests."""
     joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
     licenses = load_licenses_dataset(TEST_DATA_DIR / "licenses_sample.csv")
+    return prepare_geojson_inputs(
+        joined=joined,
+        licenses=licenses,
+        bounds=GeoBounds(
+            lat_min=NYC_LAT_MIN,
+            lat_max=NYC_LAT_MAX,
+            lng_min=NYC_LNG_MIN,
+            lng_max=NYC_LNG_MAX,
+        ),
+    )
 
-    joined = clean_joined_business_ids(joined)
 
-    licenses = clean_license_fields(licenses)
-    licenses = build_full_address(licenses)
-    licenses = filter_valid_boroughs(licenses)
+def build_expected_coords(licenses: pd.DataFrame) -> pd.DataFrame:
+    """Build the expected business-to-coordinate mapping from licenses."""
+    return (
+        licenses.sort_values(["Business Unique ID"])
+        .drop_duplicates(subset=["Business Unique ID"], keep="first")
+        [["Business Unique ID", "Latitude", "Longitude"]]
+        .rename(
+            columns={
+                "Business Unique ID": "business_id",
+                "Latitude": "latitude_expected",
+                "Longitude": "longitude_expected",
+            }
+        )
+        .reset_index(drop=True)
+    )
 
-    filtered = licenses.dropna(
-        subset=["Business Unique ID", "Latitude", "Longitude"]
-    ).copy()
-    filtered = filtered[
-        filtered["Latitude"].between(NYC_BBOX.lat_min, NYC_BBOX.lat_max)
-        & filtered["Longitude"].between(NYC_BBOX.lng_min, NYC_BBOX.lng_max)
-    ].copy()
 
-    return joined, filtered
+def assert_summary_matches_geojson(
+    test_case: unittest.TestCase,
+    features_df: pd.DataFrame,
+    expected_summary: pd.DataFrame,
+) -> None:
+    """Assert that GeoJSON properties match the expected business summary."""
+    merged = features_df.merge(
+        expected_summary[["business_id", "active", "last_month", "complaint_sum"]],
+        on="business_id",
+        how="left",
+        suffixes=("_geojson", "_expected"),
+    )
+
+    test_case.assertTrue(merged["active_expected"].notna().all())
+    test_case.assertTrue(
+        (
+            merged["active_geojson"].astype(int)
+            == merged["active_expected"].astype(int)
+        ).all()
+    )
+    test_case.assertTrue(
+        (merged["last_month_geojson"] == merged["last_month_expected"]).all()
+    )
+    test_case.assertTrue(
+        (
+            pd.to_numeric(merged["complaint_sum_geojson"], errors="coerce")
+            == pd.to_numeric(merged["complaint_sum_expected"], errors="coerce")
+        ).all()
+    )
+
+
+def assert_coordinates_match_geojson(
+    test_case: unittest.TestCase,
+    features_df: pd.DataFrame,
+    expected_coords: pd.DataFrame,
+) -> None:
+    """Assert that GeoJSON point coordinates match expected license coordinates."""
+    merged_coords = features_df.merge(
+        expected_coords,
+        on="business_id",
+        how="left",
+    )
+
+    test_case.assertTrue(merged_coords["latitude_expected"].notna().all())
+    test_case.assertTrue(merged_coords["longitude_expected"].notna().all())
+    test_case.assertTrue(
+        (
+            merged_coords["latitude"].round(8)
+            == merged_coords["latitude_expected"].round(8)
+        ).all()
+    )
+    test_case.assertTrue(
+        (
+            merged_coords["longitude"].round(8)
+            == merged_coords["longitude_expected"].round(8)
+        ).all()
+    )
 
 
 class TestMapbox(unittest.TestCase):
-    """Test suite for Mapbox GeoJSON generation pipeline."""
+    """Test suite for mapbox GeoJSON preparation helpers and pipeline."""
+
+    def test_load_joined_dataset_parses_month_and_business_id(self):
+        """Load joined data with required identifiers and parsed month values."""
+        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
+        self.assertIn("business_id", joined.columns)
+        self.assertIn("month", joined.columns)
+        self.assertTrue(pd.api.types.is_datetime64_any_dtype(joined["month"]))
+
+    def test_validate_joined_dataset_accepts_valid_data(self):
+        """Accept a valid joined dataset without raising validation errors."""
+        joined = load_joined_dataset(TEST_DATA_DIR / "joined_dataset.csv")
+        validate_joined_dataset(joined)
+
+    def test_validate_joined_dataset_rejects_missing_required_columns(self):
+        """Reject joined datasets that omit required columns."""
+        bad = pd.DataFrame(
+            {
+                "business_id": ["A"],
+                "month": ["2025-01-01"],
+            }
+        )
+        bad["month"] = pd.to_datetime(bad["month"])
+
+        with self.assertRaisesRegex(ValueError, "Missing required joined columns"):
+            validate_joined_dataset(bad)
 
     def test_validate_licenses_dataset_accepts_valid_data(self):
-        """Test that validation succeeds on a properly formatted licenses dataset."""
+        """Accept a valid licenses dataset without raising validation errors."""
         licenses = load_licenses_dataset(TEST_DATA_DIR / "licenses_sample.csv")
         validate_licenses_dataset(licenses)
 
     def test_validate_licenses_dataset_rejects_missing_required_columns(self):
-        """Test that validation fails when the licenses dataset misses required columns."""
+        """Reject license datasets that omit required columns."""
         bad = pd.DataFrame(
             {
                 "Business Unique ID": ["A"],
@@ -102,7 +210,7 @@ class TestMapbox(unittest.TestCase):
             validate_licenses_dataset(bad)
 
     def test_filter_valid_boroughs_keeps_only_five_boroughs(self):
-        """Test that invalid boroughs are correctly filtered out."""
+        """Keep only rows whose borough is one of the five NYC boroughs."""
         licenses = pd.DataFrame(
             {
                 "Business Unique ID": ["1", "2", "3"],
@@ -116,8 +224,29 @@ class TestMapbox(unittest.TestCase):
         self.assertTrue(set(filtered["Borough"].unique()).issubset(VALID_BOROUGHS))
         self.assertNotIn("Boston", filtered["Borough"].tolist())
 
+    def test_filter_nyc_license_coordinates_keeps_only_nyc_bounds(self):
+        """Keep only license coordinates that fall within NYC bounds."""
+        licenses = pd.DataFrame(
+            {
+                "Business Unique ID": ["1", "2"],
+                "Latitude": [40.75, 39.0],
+                "Longitude": [-73.9, -73.9],
+            }
+        )
+
+        filtered = filter_nyc_license_coordinates(
+            licenses=licenses,
+            lat_min=NYC_LAT_MIN,
+            lat_max=NYC_LAT_MAX,
+            lng_min=NYC_LNG_MIN,
+            lng_max=NYC_LNG_MAX,
+        )
+
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered.iloc[0]["Business Unique ID"], "1")
+
     def test_build_business_summary_has_expected_columns(self):
-        """Test that the business summary aggregates expected panel metrics."""
+        """Build business summary rows with core activity and complaint fields."""
         joined, _licenses = prepare_clean_inputs()
         summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
 
@@ -129,7 +258,7 @@ class TestMapbox(unittest.TestCase):
         self.assertTrue(set(summary["active"].unique()).issubset({0, 1}))
 
     def test_build_business_license_metadata_has_expected_columns(self):
-        """Test that license metadata aggregation forms expected structured lists."""
+        """Build license metadata with coordinates and record lists per business."""
         _joined, licenses = prepare_clean_inputs()
         metadata = build_business_license_metadata(licenses)
 
@@ -139,12 +268,12 @@ class TestMapbox(unittest.TestCase):
         self.assertIn("longitude", metadata.columns)
         self.assertIn("license_count", metadata.columns)
         self.assertIn("license_records", metadata.columns)
-
-        is_list = metadata["license_records"].apply(lambda x: isinstance(x, list))
-        self.assertTrue(is_list.all())
+        self.assertTrue(
+            metadata["license_records"].apply(lambda x: isinstance(x, list)).all()
+        )
 
     def test_merge_business_summary_with_license_metadata_returns_business_rows(self):
-        """Test that the summary and metadata dataframes map correctly to one another."""
+        """Merge summary and metadata into a business-level GeoJSON source table."""
         joined, licenses = prepare_clean_inputs()
         summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
         metadata = build_business_license_metadata(licenses)
@@ -156,7 +285,7 @@ class TestMapbox(unittest.TestCase):
         self.assertIn("license_records", merged.columns)
 
     def test_build_feature_returns_valid_geojson_feature(self):
-        """Test that a single series row maps to a properly formed GeoJSON feature dict."""
+        """Convert one business row into a valid GeoJSON point feature."""
         row = pd.Series(
             {
                 "business_id": "B1",
@@ -178,8 +307,32 @@ class TestMapbox(unittest.TestCase):
         self.assertEqual(feature["geometry"]["coordinates"], [-73.90, 40.75])
         self.assertEqual(feature["properties"]["business_id"], "B1")
 
+    def test_build_geojson_features_and_collection(self):
+        """Build feature rows and wrap them in a GeoJSON feature collection."""
+        businesses = pd.DataFrame(
+            [
+                {
+                    "business_id": "B1",
+                    "active": 1,
+                    "last_month": pd.Timestamp("2026-02-01"),
+                    "complaint_sum": 5.0,
+                    "license_count": 2,
+                    "license_records": [],
+                    "latitude": 40.75,
+                    "longitude": -73.90,
+                }
+            ]
+        )
+
+        features = build_geojson_features(businesses)
+        geojson = build_geojson(features)
+
+        self.assertEqual(len(features), 1)
+        self.assertEqual(geojson["type"], "FeatureCollection")
+        self.assertEqual(len(geojson["features"]), 1)
+
     def test_run_geojson_pipeline_writes_valid_geojson(self):
-        """Test that the end-to-end GeoJSON pipeline properly dumps out a valid file."""
+        """Run the pipeline and write a valid non-empty GeoJSON file."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "businesses.geojson"
 
@@ -201,8 +354,8 @@ class TestMapbox(unittest.TestCase):
             self.assertIsInstance(geojson["features"], list)
             self.assertGreater(len(geojson["features"]), 0)
 
-    def test_geojson_output_matches_active_status(self):
-        """Test that the generated GeoJSON maps to the expected active status metrics."""
+    def test_geojson_output_matches_expected_business_logic(self):
+        """Verify GeoJSON output matches expected business summary and coordinates."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "businesses.geojson"
             config = GeoJSONConfig(
@@ -215,94 +368,36 @@ class TestMapbox(unittest.TestCase):
             with output_path.open("r", encoding="utf-8") as file_obj:
                 geojson = json.load(file_obj)
 
-            features_df = flatten_geojson_features(geojson)
-            joined, _ = prepare_clean_inputs()
+        features_df = flatten_geojson_features(geojson)
+        joined, licenses = prepare_clean_inputs()
+        expected_summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
+        expected_coords = build_expected_coords(licenses)
 
-            expected_summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
-            expected_subset = expected_summary[["business_id", "active", "last_month"]]
+        self.assertFalse(features_df.empty)
+        self.assertTrue(features_df["business_id"].notna().all())
+        self.assertFalse(features_df["business_id"].duplicated().any())
+        self.assertTrue((features_df["geometry_type"] == "Point").all())
+        self.assertTrue(features_df["latitude"].between(NYC_LAT_MIN, NYC_LAT_MAX).all())
+        self.assertTrue(features_df["longitude"].between(NYC_LNG_MIN, NYC_LNG_MAX).all())
+        self.assertTrue(
+            features_df["license_records"].apply(lambda x: isinstance(x, list)).all()
+        )
 
-            merged = features_df.merge(
-                expected_subset, on="business_id", how="left", suffixes=("_geojson", "_expected")
-            )
+        for records in features_df["license_records"]:
+            for record in records:
+                borough = record.get("borough")
+                self.assertTrue(borough is None or borough in VALID_BOROUGHS)
 
-            self.assertTrue(merged["active_expected"].notna().all())
+        assert_summary_matches_geojson(self, features_df, expected_summary)
+        assert_coordinates_match_geojson(self, features_df, expected_coords)
 
-            active_geojson = merged["active_geojson"].astype(int)
-            active_expected = merged["active_expected"].astype(int)
-            self.assertTrue((active_geojson == active_expected).all())
-            self.assertTrue((merged["last_month_geojson"] == merged["last_month_expected"]).all())
+    def test_build_geojson_with_no_features(self):
+        """Build an empty FeatureCollection when there are no features."""
+        geojson = build_geojson([])
 
-    def test_geojson_output_matches_complaints(self):
-        """Test that the generated GeoJSON maps to the expected complaint sum metrics."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            output_path = Path(tmpdir) / "businesses.geojson"
-            config = GeoJSONConfig(
-                joined_data_path=TEST_DATA_DIR / "joined_dataset.csv",
-                licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
-                output_path=output_path,
-            )
-            run_geojson_pipeline(config)
-
-            with output_path.open("r", encoding="utf-8") as file_obj:
-                geojson = json.load(file_obj)
-
-            features_df = flatten_geojson_features(geojson)
-            joined, _ = prepare_clean_inputs()
-
-            expected_summary = build_business_summary(joined, cutoff_date=CUTOFF_DATE)
-            expected_subset = expected_summary[["business_id", "complaint_sum"]]
-
-            merged = features_df.merge(
-                expected_subset, on="business_id", how="left", suffixes=("_geojson", "_expected")
-            )
-
-            complaint_geojson = pd.to_numeric(merged["complaint_sum_geojson"], errors="coerce")
-            complaint_expected = pd.to_numeric(merged["complaint_sum_expected"], errors="coerce")
-            self.assertTrue((complaint_geojson == complaint_expected).all())
-
-    def test_geojson_output_matches_coordinates(self):
-        """Test that the generated GeoJSON maps to the expected coordinates."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            output_path = Path(tmpdir) / "businesses.geojson"
-            config = GeoJSONConfig(
-                joined_data_path=TEST_DATA_DIR / "joined_dataset.csv",
-                licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
-                output_path=output_path,
-            )
-            run_geojson_pipeline(config)
-
-            with output_path.open("r", encoding="utf-8") as file_obj:
-                geojson = json.load(file_obj)
-
-            features_df = flatten_geojson_features(geojson)
-            _, licenses = prepare_clean_inputs()
-
-            expected_coords = (
-                licenses.sort_values(["Business Unique ID"])
-                .drop_duplicates(subset=["Business Unique ID"], keep="first")
-                [["Business Unique ID", "Latitude", "Longitude"]]
-                .rename(
-                    columns={
-                        "Business Unique ID": "business_id",
-                        "Latitude": "latitude_expected",
-                        "Longitude": "longitude_expected",
-                    }
-                )
-                .reset_index(drop=True)
-            )
-
-            merged_coords = features_df.merge(
-                expected_coords,
-                on="business_id",
-                how="left",
-            )
-
-            self.assertTrue(merged_coords["latitude_expected"].notna().all())
-            self.assertTrue(merged_coords["longitude_expected"].notna().all())
-
-            lat_geojson = merged_coords["latitude"].round(8)
-            lat_expected = merged_coords["latitude_expected"].round(8)
-            self.assertTrue((lat_geojson == lat_expected).all())
+        self.assertEqual(geojson["type"], "FeatureCollection")
+        self.assertIn("features", geojson)
+        self.assertEqual(geojson["features"], [])
 
 
 if __name__ == "__main__":

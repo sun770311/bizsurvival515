@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - python>=3.10
+  - scikit-learn==1.6.1
   - pip
   - pip:
     - -e .[dev]

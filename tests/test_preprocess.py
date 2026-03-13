@@ -1,4 +1,4 @@
-"""Tests for the preprocessing pipeline module."""
+"""Unit tests for the preprocessing pipeline."""
 
 from pathlib import Path
 import tempfile
@@ -7,6 +7,8 @@ import unittest
 import pandas as pd
 
 from pipeline.preprocess import (
+    LICENSE_SOURCE_COLUMNS,
+    SERVICE_REQUEST_SOURCE_COLUMNS,
     PipelineConfig,
     build_joined_dataset,
     clean_licenses,
@@ -22,35 +24,35 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 class TestPreprocess(unittest.TestCase):
-    """Test suite for the preprocessing pipeline functions."""
+    """Test suite for preprocessing helpers and joined dataset generation."""
 
     def test_sanitize_feature_name_basic(self):
-        """Test that sanitize_feature_name formats basic strings correctly."""
+        """Convert a basic category string into a sanitized feature name."""
         self.assertEqual(
             sanitize_feature_name("Home Improvement Contractor", "business_category"),
             "business_category_home_improvement_contractor",
         )
 
     def test_sanitize_feature_name_symbols(self):
-        """Test that sanitize_feature_name replaces special characters appropriately."""
+        """Replace symbols and whitespace when sanitizing feature names."""
         self.assertEqual(
             sanitize_feature_name("Heat & Hot Water", "complaint_type"),
             "complaint_type_heat_and_hot_water",
         )
 
     def test_make_unique_column_names(self):
-        """Test that make_unique_column_names appends numerical suffixes to duplicates."""
+        """Append numeric suffixes to repeated column names."""
         names = ["a", "a", "b", "a"]
         self.assertEqual(make_unique_column_names(names), ["a", "a_1", "b", "a_2"])
 
     def test_month_range_inclusive(self):
-        """Test that month_range returns an inclusive sequence of month-start dates."""
+        """Generate an inclusive monthly date range from start to end."""
         result = month_range(pd.Timestamp("2025-01-01"), pd.Timestamp("2025-03-01"))
         expected = pd.to_datetime(["2025-01-01", "2025-02-01", "2025-03-01"])
         pd.testing.assert_index_equal(result, expected)
 
     def test_clean_licenses_parses_dates_and_filters_invalid_rows(self):
-        """Test that clean_licenses parses dates and filters out incomplete records."""
+        """Parse license dates and remove invalid or incomplete license rows."""
         raw = pd.DataFrame(
             {
                 "License Number": ["1", "2"],
@@ -70,7 +72,7 @@ class TestPreprocess(unittest.TestCase):
         self.assertEqual(cleaned.iloc[0]["Business Unique ID"], "B1")
 
     def test_clean_service_requests_parses_dates_and_filters_invalid_rows(self):
-        """Test that clean_service_requests drops records with bad dates or values."""
+        """Parse request dates and remove invalid or incomplete service rows."""
         raw = pd.DataFrame(
             {
                 "Unique Key": ["100", "101"],
@@ -87,7 +89,7 @@ class TestPreprocess(unittest.TestCase):
         self.assertEqual(cleaned.iloc[0]["month"], pd.Timestamp("2025-01-01"))
 
     def test_build_joined_dataset_from_sample_data(self):
-        """Test the end-to-end dataset builder against a sample subset of data."""
+        """Build the joined monthly dataset with expected engineered columns."""
         config = PipelineConfig(
             licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
             service_reqs_path=TEST_DATA_DIR / "service_reqs_sample.csv",
@@ -112,7 +114,7 @@ class TestPreprocess(unittest.TestCase):
         self.assertIn(joined["location_cluster"].dtype.kind, {"i", "u"})
 
     def test_business_category_sum_matches_category_columns(self):
-        """Test that the category sum column aligns with individual category flags."""
+        """Verify category sum equals the sum across category indicator columns."""
         config = PipelineConfig(
             licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
             service_reqs_path=TEST_DATA_DIR / "service_reqs_sample.csv",
@@ -123,7 +125,8 @@ class TestPreprocess(unittest.TestCase):
         joined = build_joined_dataset(config)
 
         category_cols = [
-            c for c in joined.columns
+            c
+            for c in joined.columns
             if c.startswith("business_category_") and c != "business_category_sum"
         ]
         if category_cols:
@@ -135,7 +138,7 @@ class TestPreprocess(unittest.TestCase):
             )
 
     def test_complaint_sum_matches_complaint_columns(self):
-        """Test that the complaint sum column aligns with individual complaint flags."""
+        """Verify complaint sum equals the sum across complaint count columns."""
         config = PipelineConfig(
             licenses_path=TEST_DATA_DIR / "licenses_sample.csv",
             service_reqs_path=TEST_DATA_DIR / "service_reqs_sample.csv",
@@ -146,7 +149,8 @@ class TestPreprocess(unittest.TestCase):
         joined = build_joined_dataset(config)
 
         complaint_cols = [
-            c for c in joined.columns
+            c
+            for c in joined.columns
             if c.startswith("complaint_type_") and c != "complaint_sum"
         ]
         if complaint_cols:
@@ -158,7 +162,7 @@ class TestPreprocess(unittest.TestCase):
             )
 
     def test_run_pipeline_writes_output(self):
-        """Test that the full pipeline writes the resulting dataset to disk."""
+        """Run the preprocess pipeline and write a non-empty output CSV."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "joined_dataset.csv"
 
@@ -176,6 +180,22 @@ class TestPreprocess(unittest.TestCase):
 
             written = pd.read_csv(output_path)
             self.assertFalse(written.empty)
+
+    def test_clean_licenses_empty_input(self):
+        """Return an empty dataframe when licenses input is empty."""
+        raw = pd.DataFrame(columns=LICENSE_SOURCE_COLUMNS)
+
+        cleaned = clean_licenses(raw)
+
+        self.assertTrue(cleaned.empty)
+
+    def test_clean_service_requests_empty_input(self):
+        """Return an empty dataframe when service-request input is empty."""
+        raw = pd.DataFrame(columns=SERVICE_REQUEST_SOURCE_COLUMNS)
+
+        cleaned = clean_service_requests(raw)
+
+        self.assertTrue(cleaned.empty)
 
 
 if __name__ == "__main__":
