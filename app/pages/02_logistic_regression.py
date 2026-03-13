@@ -10,16 +10,19 @@ from utils.artifact_loader import (
     load_logistic_reference_data,
 )
 from utils.feature_builder import (
+    BusinessProfileInputs,
+    baseline_new_business_profile,
+    build_logistic_profile,
+    category_display_to_column_map,
+    complaint_display_to_column_map,
+    prettify_feature_name,
+)
+from utils.location_utils import (
     NYC_LAT_MAX,
     NYC_LAT_MIN,
     NYC_LNG_MAX,
     NYC_LNG_MIN,
-    baseline_new_business_profile,
-    build_logistic_profile,
-    category_display_to_column_map,
     clamp_to_nyc_bounds,
-    complaint_display_to_column_map,
-    prettify_feature_name,
 )
 from utils.prediction_tools import (
     predict_logistic_profile,
@@ -389,14 +392,18 @@ with tab1:
             category_map[name] for name in selected_category_display
         ]
 
-        profile = build_logistic_profile(
-            kept_columns=kept_columns,
-            reference_df=businesses_df,
+        profile_inputs = BusinessProfileInputs(
             selected_category_columns=selected_category_columns,
             active_license_count=int(active_license_count),
             business_latitude=business_latitude,
             business_longitude=business_longitude,
             complaint_counts=complaint_counts,
+        )
+
+        profile = build_logistic_profile(
+            kept_columns=kept_columns,
+            reference_df=businesses_df,
+            inputs=profile_inputs,
         )
 
         prediction = predict_logistic_profile(pipeline, profile)

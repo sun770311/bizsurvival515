@@ -1,20 +1,38 @@
+"""
+Helper functions for building Cox models.
+"""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from .location_utils import (
+    assign_nearest_cluster_info,
+    build_cluster_reference_df,
+    clamp_to_nyc_bounds,
+)
 
-NYC_LAT_MIN = 40.49
-NYC_LAT_MAX = 40.92
-NYC_LNG_MIN = -74.27
-NYC_LNG_MAX = -73.68
 
-DEFAULT_SURVIVAL_MONTHS = [12, 36, 60, 120]
+@dataclass
+class CoxProfileInputs:
+    """
+    Container for user-provided Cox profile inputs.
+    """
+
+    selected_category_columns: list[str]
+    active_license_count: int
+    business_latitude: float
+    business_longitude: float
+    complaint_counts: dict[str, float] | None = None
 
 
 def prettify_cox_feature_name(column_name: str) -> str:
+    """
+    Prettify a Cox feature name by removing the prefix and capitalizing the rest.
+    """
     for prefix in ("business_category_", "complaint_type_"):
         if column_name.startswith(prefix):
             raw = column_name[len(prefix):]
@@ -23,6 +41,9 @@ def prettify_cox_feature_name(column_name: str) -> str:
 
 
 def cox_category_feature_columns(kept_columns: list[str]) -> list[str]:
+    """
+    Get the columns for the Cox category features.
+    """
     return sorted(
         [
             column
@@ -34,26 +55,41 @@ def cox_category_feature_columns(kept_columns: list[str]) -> list[str]:
 
 
 def cox_complaint_feature_columns(kept_columns: list[str]) -> list[str]:
+    """
+    Get the columns for the Cox complaint features.
+    """
     return sorted(
         [column for column in kept_columns if column.startswith("complaint_type_")]
     )
 
 
 def cox_category_display_to_column_map(kept_columns: list[str]) -> dict[str, str]:
+    """
+    Map the Cox category feature names to the display names.
+    """
     category_cols = cox_category_feature_columns(kept_columns)
     return {prettify_cox_feature_name(col): col for col in category_cols}
 
 
 def cox_complaint_display_to_column_map(kept_columns: list[str]) -> dict[str, str]:
+    """
+    Map the Cox complaint feature names to the display names.
+    """
     complaint_cols = cox_complaint_feature_columns(kept_columns)
     return {prettify_cox_feature_name(col): col for col in complaint_cols}
 
 
 def build_zero_profile(kept_columns: list[str]) -> pd.DataFrame:
+    """
+    Build a zero profile for the Cox model.
+    """
     return pd.DataFrame(0.0, index=[0], columns=kept_columns)
 
 
 def _cluster_reference_df(reference_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get the reference dataframe for the Cox model.
+    """
     raw_required = {"location_cluster_lat", "location_cluster_lng"}
     agg_required = {
         "location_cluster_lat_first12m_first",
@@ -61,73 +97,32 @@ def _cluster_reference_df(reference_df: pd.DataFrame) -> pd.DataFrame:
     }
 
     if raw_required.issubset(reference_df.columns):
-        cluster_cols = [
-            column
-            for column in [
-                "location_cluster",
-                "location_cluster_lat",
-                "location_cluster_lng",
-            ]
-            if column in reference_df.columns
-        ]
-        return (
-            reference_df[cluster_cols]
-            .dropna(subset=["location_cluster_lat", "location_cluster_lng"])
-            .drop_duplicates()
-            .reset_index(drop=True)
+        return build_cluster_reference_df(
+            reference_df=reference_df,
+            lat_column="location_cluster_lat",
+            lng_column="location_cluster_lng",
+            cluster_column="location_cluster",
         )
 
     if agg_required.issubset(reference_df.columns):
-        rename_map = {
-            "location_cluster_first12m_first": "location_cluster",
-            "location_cluster_lat_first12m_first": "location_cluster_lat",
-            "location_cluster_lng_first12m_first": "location_cluster_lng",
-        }
-        available_cols = [col for col in rename_map if col in reference_df.columns]
-        cluster_df = reference_df[available_cols].rename(columns=rename_map)
-        return (
-            cluster_df
-            .dropna(subset=["location_cluster_lat", "location_cluster_lng"])
-            .drop_duplicates()
-            .reset_index(drop=True)
+        return build_cluster_reference_df(
+            reference_df=reference_df,
+            lat_column="location_cluster_lat_first12m_first",
+            lng_column="location_cluster_lng_first12m_first",
+            cluster_column="location_cluster_first12m_first",
         )
 
     return pd.DataFrame()
 
 
-def assign_nearest_cluster_info(
-    latitude: float,
-    longitude: float,
-    reference_df: pd.DataFrame,
-) -> tuple[float | None, float, float]:
-    cluster_df = _cluster_reference_df(reference_df)
-
-    if cluster_df.empty:
-        return None, float(latitude), float(longitude)
-
-    cluster_coords = cluster_df[["location_cluster_lat", "location_cluster_lng"]].to_numpy(
-        dtype=float
-    )
-    point = np.array([latitude, longitude], dtype=float)
-
-    distances = np.sqrt(((cluster_coords - point) ** 2).sum(axis=1))
-    nearest_idx = int(np.argmin(distances))
-
-    cluster_id: float | None = None
-    if "location_cluster" in cluster_df.columns:
-        raw_cluster = cluster_df.loc[nearest_idx, "location_cluster"]
-        if pd.notna(raw_cluster):
-            cluster_id = float(raw_cluster)
-
-    return (
-        cluster_id,
-        float(cluster_df.loc[nearest_idx, "location_cluster_lat"]),
-        float(cluster_df.loc[nearest_idx, "location_cluster_lng"]),
-    )
-
-
 def get_reference_median_lat_lng(reference_df: pd.DataFrame) -> tuple[float, float]:
-    if "business_latitude" in reference_df.columns and "business_longitude" in reference_df.columns:
+    """
+    Get the median latitude and longitude of the reference dataframe.
+    """
+    if (
+        "business_latitude" in reference_df.columns
+        and "business_longitude" in reference_df.columns
+    ):
         return (
             float(reference_df["business_latitude"].median()),
             float(reference_df["business_longitude"].median()),
@@ -149,6 +144,9 @@ def _sample_reference_coordinate(
     reference_df: pd.DataFrame,
     rng: np.random.Generator,
 ) -> tuple[float, float]:
+    """
+    Sample a reference coordinate from the reference dataframe.
+    """
     if (
         "business_latitude_first12m_first" in reference_df.columns
         and "business_longitude_first12m_first" in reference_df.columns
@@ -167,23 +165,27 @@ def _sample_reference_coordinate(
     return clamp_to_nyc_bounds(median_lat, median_lng)
 
 
-def baseline_standard_cox_profile(
-    kept_columns: list[str],
+def _apply_numeric_inputs(
+    profile: pd.DataFrame,
     reference_df: pd.DataFrame,
-) -> pd.DataFrame:
-    profile = build_zero_profile(kept_columns)
-
-    median_lat, median_lng = get_reference_median_lat_lng(reference_df)
+    active_license_count: int,
+    business_latitude: float,
+    business_longitude: float,
+) -> None:
+    """
+    Fill the numeric Cox inputs into the profile in place.
+    """
+    cluster_df = _cluster_reference_df(reference_df)
     cluster_id, cluster_lat, cluster_lng = assign_nearest_cluster_info(
-        median_lat,
-        median_lng,
-        reference_df,
+        business_latitude,
+        business_longitude,
+        cluster_df,
     )
 
-    numeric_inputs: dict[str, Any] = {
-        "active_license_count": 1.0,
-        "business_latitude": float(median_lat),
-        "business_longitude": float(median_lng),
+    numeric_inputs: dict[str, float] = {
+        "active_license_count": float(active_license_count),
+        "business_latitude": float(business_latitude),
+        "business_longitude": float(business_longitude),
         "location_cluster": float(cluster_id) if cluster_id is not None else 0.0,
         "location_cluster_lat": float(cluster_lat),
         "location_cluster_lng": float(cluster_lng),
@@ -191,120 +193,112 @@ def baseline_standard_cox_profile(
 
     for column, value in numeric_inputs.items():
         if column in profile.columns:
-            profile.loc[0, column] = float(value)
+            profile.loc[0, column] = value
+
+
+def _apply_category_inputs(
+    profile: pd.DataFrame,
+    selected_category_columns: list[str],
+) -> None:
+    """
+    Fill the selected category columns into the profile in place.
+    """
+    for category_column in selected_category_columns:
+        if category_column in profile.columns:
+            profile.loc[0, category_column] = 1.0
+
+
+def _apply_complaint_inputs(
+    profile: pd.DataFrame,
+    complaint_counts: dict[str, float] | None,
+) -> None:
+    """
+    Fill complaint counts into the profile in place.
+    """
+    for complaint_column, count in (complaint_counts or {}).items():
+        if complaint_column in profile.columns:
+            profile.loc[0, complaint_column] = float(count)
+
+
+def _build_cox_profile(
+    kept_columns: list[str],
+    reference_df: pd.DataFrame,
+    inputs: CoxProfileInputs,
+) -> pd.DataFrame:
+    """
+    Shared helper for building a Cox profile.
+    """
+    profile = build_zero_profile(kept_columns)
+
+    _apply_numeric_inputs(
+        profile=profile,
+        reference_df=reference_df,
+        active_license_count=inputs.active_license_count,
+        business_latitude=inputs.business_latitude,
+        business_longitude=inputs.business_longitude,
+    )
+    _apply_category_inputs(profile, inputs.selected_category_columns)
+    _apply_complaint_inputs(profile, inputs.complaint_counts)
 
     return profile
+
+
+def baseline_standard_cox_profile(
+    kept_columns: list[str],
+    reference_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Build a baseline standard Cox profile.
+    """
+    median_lat, median_lng = get_reference_median_lat_lng(reference_df)
+    baseline_inputs = CoxProfileInputs(
+        selected_category_columns=[],
+        active_license_count=1,
+        business_latitude=float(median_lat),
+        business_longitude=float(median_lng),
+        complaint_counts={},
+    )
+    return _build_cox_profile(kept_columns, reference_df, baseline_inputs)
 
 
 def baseline_time_varying_cox_profile(
     kept_columns: list[str],
     reference_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    profile = build_zero_profile(kept_columns)
-
+    """
+    Build a baseline time-varying Cox profile.
+    """
     median_lat, median_lng = get_reference_median_lat_lng(reference_df)
-    cluster_id, cluster_lat, cluster_lng = assign_nearest_cluster_info(
-        median_lat,
-        median_lng,
-        reference_df,
+    baseline_inputs = CoxProfileInputs(
+        selected_category_columns=[],
+        active_license_count=1,
+        business_latitude=float(median_lat),
+        business_longitude=float(median_lng),
+        complaint_counts={},
     )
-
-    numeric_inputs: dict[str, Any] = {
-        "active_license_count": 1.0,
-        "business_latitude": float(median_lat),
-        "business_longitude": float(median_lng),
-        "location_cluster": float(cluster_id) if cluster_id is not None else 0.0,
-        "location_cluster_lat": float(cluster_lat),
-        "location_cluster_lng": float(cluster_lng),
-    }
-
-    for column, value in numeric_inputs.items():
-        if column in profile.columns:
-            profile.loc[0, column] = float(value)
-
-    return profile
+    return _build_cox_profile(kept_columns, reference_df, baseline_inputs)
 
 
 def build_standard_cox_profile(
     kept_columns: list[str],
     reference_df: pd.DataFrame,
-    selected_category_columns: list[str],
-    active_license_count: int,
-    business_latitude: float,
-    business_longitude: float,
-    complaint_counts: dict[str, float] | None = None,
+    inputs: CoxProfileInputs,
 ) -> pd.DataFrame:
-    profile = build_zero_profile(kept_columns)
-
-    cluster_id, cluster_lat, cluster_lng = assign_nearest_cluster_info(
-        business_latitude,
-        business_longitude,
-        reference_df,
-    )
-
-    numeric_inputs: dict[str, Any] = {
-        "active_license_count": float(active_license_count),
-        "business_latitude": float(business_latitude),
-        "business_longitude": float(business_longitude),
-        "location_cluster": float(cluster_id) if cluster_id is not None else 0.0,
-        "location_cluster_lat": float(cluster_lat),
-        "location_cluster_lng": float(cluster_lng),
-    }
-
-    for column, value in numeric_inputs.items():
-        if column in profile.columns:
-            profile.loc[0, column] = float(value)
-
-    for category_column in selected_category_columns:
-        if category_column in profile.columns:
-            profile.loc[0, category_column] = 1.0
-
-    for complaint_column, count in (complaint_counts or {}).items():
-        if complaint_column in profile.columns:
-            profile.loc[0, complaint_column] = float(count)
-
-    return profile
+    """
+    Build a standard Cox profile.
+    """
+    return _build_cox_profile(kept_columns, reference_df, inputs)
 
 
 def build_time_varying_cox_profile(
     kept_columns: list[str],
     reference_df: pd.DataFrame,
-    selected_category_columns: list[str],
-    active_license_count: int,
-    business_latitude: float,
-    business_longitude: float,
-    complaint_counts: dict[str, float] | None = None,
+    inputs: CoxProfileInputs,
 ) -> pd.DataFrame:
-    profile = build_zero_profile(kept_columns)
-
-    cluster_id, cluster_lat, cluster_lng = assign_nearest_cluster_info(
-        business_latitude,
-        business_longitude,
-        reference_df,
-    )
-
-    numeric_inputs: dict[str, Any] = {
-        "active_license_count": float(active_license_count),
-        "business_latitude": float(business_latitude),
-        "business_longitude": float(business_longitude),
-        "location_cluster": float(cluster_id) if cluster_id is not None else 0.0,
-        "location_cluster_lat": float(cluster_lat),
-        "location_cluster_lng": float(cluster_lng),
-    }
-
-    for column, value in numeric_inputs.items():
-        if column in profile.columns:
-            profile.loc[0, column] = float(value)
-
-    for category_column in selected_category_columns:
-        if category_column in profile.columns:
-            profile.loc[0, category_column] = 1.0
-
-    for complaint_column, count in (complaint_counts or {}).items():
-        if complaint_column in profile.columns:
-            profile.loc[0, complaint_column] = float(count)
-
-    return profile
+    """
+    Build a time-varying Cox profile.
+    """
+    return _build_cox_profile(kept_columns, reference_df, inputs)
 
 
 def build_time_varying_cox_profiles_over_time(
@@ -312,19 +306,25 @@ def build_time_varying_cox_profiles_over_time(
     reference_df: pd.DataFrame,
     timepoint_specs: list[dict[str, Any]],
 ) -> pd.DataFrame:
+    """
+    Build a time-varying Cox profile over time.
+    """
     rows: list[pd.DataFrame] = []
 
     for spec in timepoint_specs:
         month = int(spec["month"])
-
-        profile = build_time_varying_cox_profile(
-            kept_columns=kept_columns,
-            reference_df=reference_df,
+        inputs = CoxProfileInputs(
             selected_category_columns=list(spec["selected_category_columns"]),
             active_license_count=int(spec["active_license_count"]),
             business_latitude=float(spec["business_latitude"]),
             business_longitude=float(spec["business_longitude"]),
             complaint_counts=dict(spec.get("complaint_counts", {})),
+        )
+
+        profile = build_time_varying_cox_profile(
+            kept_columns=kept_columns,
+            reference_df=reference_df,
+            inputs=inputs,
         ).copy()
 
         profile["month"] = month
@@ -333,15 +333,16 @@ def build_time_varying_cox_profiles_over_time(
     if not rows:
         return pd.DataFrame(columns=kept_columns + ["month"])
 
-    result = pd.concat(rows, ignore_index=True)
-    result = result.sort_values("month").reset_index(drop=True)
-    return result
+    return pd.concat(rows, ignore_index=True).sort_values("month").reset_index(drop=True)
 
 
 def _mutate_active_license_count(
     previous_value: int,
     rng: np.random.Generator,
 ) -> int:
+    """
+    Mutate the active license count.
+    """
     change = int(rng.choice([-1, 0, 0, 0, 1]))
     return int(min(max(previous_value + change, 1), 5))
 
@@ -350,6 +351,9 @@ def _sample_initial_categories(
     category_columns: list[str],
     rng: np.random.Generator,
 ) -> list[str]:
+    """
+    Sample the initial categories.
+    """
     if not category_columns:
         return []
 
@@ -367,8 +371,10 @@ def _mutate_categories(
     category_columns: list[str],
     rng: np.random.Generator,
 ) -> list[str]:
+    """
+    Mutate the categories.
+    """
     categories = set(previous_categories)
-
     action = str(rng.choice(["keep", "keep", "keep", "add", "remove"]))
 
     if action == "add":
@@ -385,6 +391,9 @@ def _sample_initial_complaint_counts(
     complaint_columns: list[str],
     rng: np.random.Generator,
 ) -> dict[str, float]:
+    """
+    Sample the initial complaint counts.
+    """
     counts: dict[str, float] = {}
 
     if not complaint_columns:
@@ -408,6 +417,9 @@ def _mutate_complaint_counts(
     complaint_columns: list[str],
     rng: np.random.Generator,
 ) -> dict[str, float]:
+    """
+    Mutate the complaint counts.
+    """
     counts = {str(key): float(value) for key, value in previous_counts.items()}
 
     for complaint_col in list(counts.keys()):
@@ -433,9 +445,113 @@ def _mutate_location(
     longitude: float,
     rng: np.random.Generator,
 ) -> tuple[float, float]:
+    """
+    Mutate the location.
+    """
     lat = float(latitude) + float(rng.normal(0.0, 0.003))
     lng = float(longitude) + float(rng.normal(0.0, 0.003))
     return clamp_to_nyc_bounds(lat, lng)
+
+
+def _initial_timeline_state(
+    reference_df: pd.DataFrame,
+    category_columns: list[str],
+    complaint_columns: list[str],
+    rng: np.random.Generator,
+) -> dict[str, Any]:
+    """
+    Build the initial synthetic business state.
+    """
+    start_lat, start_lng = _sample_reference_coordinate(reference_df, rng)
+    return {
+        "active_license_count": int(rng.choice([1, 1, 1, 2, 2, 3])),
+        "selected_categories": _sample_initial_categories(category_columns, rng),
+        "complaint_counts": _sample_initial_complaint_counts(complaint_columns, rng),
+        "current_lat": start_lat,
+        "current_lng": start_lng,
+    }
+
+
+def _advance_timeline_state(
+    state: dict[str, Any],
+    category_columns: list[str],
+    complaint_columns: list[str],
+    rng: np.random.Generator,
+) -> None:
+    """
+    Mutate a synthetic business state in place.
+    """
+    state["active_license_count"] = _mutate_active_license_count(
+        int(state["active_license_count"]),
+        rng,
+    )
+    state["selected_categories"] = _mutate_categories(
+        list(state["selected_categories"]),
+        category_columns,
+        rng,
+    )
+    state["complaint_counts"] = _mutate_complaint_counts(
+        dict(state["complaint_counts"]),
+        complaint_columns,
+        rng,
+    )
+    state["current_lat"], state["current_lng"] = _mutate_location(
+        float(state["current_lat"]),
+        float(state["current_lng"]),
+        rng,
+    )
+
+
+def _build_timepoint_record(
+    month: int,
+    state: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Convert a synthetic state into one timepoint record.
+    """
+    return {
+        "month": month,
+        "selected_category_columns": list(state["selected_categories"]),
+        "active_license_count": int(state["active_license_count"]),
+        "business_latitude": float(state["current_lat"]),
+        "business_longitude": float(state["current_lng"]),
+        "complaint_counts": dict(state["complaint_counts"]),
+    }
+
+
+def _generate_business_timeline(
+    reference_df: pd.DataFrame,
+    category_columns: list[str],
+    complaint_columns: list[str],
+    num_timepoints: int,
+    rng: np.random.Generator,
+) -> list[dict[str, Any]]:
+    """
+    Generate one synthetic business timeline.
+    """
+    state = _initial_timeline_state(
+        reference_df=reference_df,
+        category_columns=category_columns,
+        complaint_columns=complaint_columns,
+        rng=rng,
+    )
+
+    timepoints: list[dict[str, Any]] = []
+
+    for time_idx in range(num_timepoints):
+        month = int(time_idx * 12)
+
+        if time_idx > 0:
+            _advance_timeline_state(
+                state=state,
+                category_columns=category_columns,
+                complaint_columns=complaint_columns,
+                rng=rng,
+            )
+
+        timepoints.append(_build_timepoint_record(month, state))
+
+    return timepoints
 
 
 def generate_time_varying_example_timelines(
@@ -445,52 +561,23 @@ def generate_time_varying_example_timelines(
     num_timepoints: int,
     random_state: int = 42,
 ) -> list[dict[str, Any]]:
+    """
+    Generate time-varying example timelines.
+    """
     rng = np.random.default_rng(random_state)
-
     category_columns = cox_category_feature_columns(kept_columns)
     complaint_columns = cox_complaint_feature_columns(kept_columns)
 
     generated: list[dict[str, Any]] = []
 
     for business_idx in range(num_businesses):
-        start_lat, start_lng = _sample_reference_coordinate(reference_df, rng)
-        active_license_count = int(rng.choice([1, 1, 1, 2, 2, 3]))
-        selected_categories = _sample_initial_categories(category_columns, rng)
-        complaint_counts = _sample_initial_complaint_counts(complaint_columns, rng)
-
-        timepoints: list[dict[str, Any]] = []
-
-        current_lat = start_lat
-        current_lng = start_lng
-
-        for time_idx in range(num_timepoints):
-            month = int(time_idx * 12)
-
-            if time_idx > 0:
-                active_license_count = _mutate_active_license_count(active_license_count, rng)
-                selected_categories = _mutate_categories(
-                    selected_categories,
-                    category_columns,
-                    rng,
-                )
-                complaint_counts = _mutate_complaint_counts(
-                    complaint_counts,
-                    complaint_columns,
-                    rng,
-                )
-                current_lat, current_lng = _mutate_location(current_lat, current_lng, rng)
-
-            timepoints.append(
-                {
-                    "month": month,
-                    "selected_category_columns": list(selected_categories),
-                    "active_license_count": int(active_license_count),
-                    "business_latitude": float(current_lat),
-                    "business_longitude": float(current_lng),
-                    "complaint_counts": dict(complaint_counts),
-                }
-            )
-
+        timepoints = _generate_business_timeline(
+            reference_df=reference_df,
+            category_columns=category_columns,
+            complaint_columns=complaint_columns,
+            num_timepoints=num_timepoints,
+            rng=rng,
+        )
         generated.append(
             {
                 "label": f"Business {business_idx + 1}",
@@ -504,6 +591,9 @@ def generate_time_varying_example_timelines(
 def summarize_generated_time_varying_timelines(
     generated_timelines: list[dict[str, Any]],
 ) -> pd.DataFrame:
+    """
+    Summarize the generated time-varying timelines.
+    """
     rows: list[dict[str, Any]] = []
 
     for business in generated_timelines:
@@ -512,14 +602,20 @@ def summarize_generated_time_varying_timelines(
             categories = list(timepoint["selected_category_columns"])
             complaint_counts = dict(timepoint["complaint_counts"])
 
-            category_text = ", ".join(
-                prettify_cox_feature_name(column) for column in categories
-            ) if categories else "None"
+            category_text = (
+                ", ".join(prettify_cox_feature_name(column) for column in categories)
+                if categories
+                else "None"
+            )
 
-            complaint_text = ", ".join(
-                f"{prettify_cox_feature_name(column)} ({int(value)})"
-                for column, value in sorted(complaint_counts.items())
-            ) if complaint_counts else "None"
+            complaint_text = (
+                ", ".join(
+                    f"{prettify_cox_feature_name(column)} ({int(value)})"
+                    for column, value in sorted(complaint_counts.items())
+                )
+                if complaint_counts
+                else "None"
+            )
 
             rows.append(
                 {
@@ -547,9 +643,3 @@ def summarize_generated_time_varying_timelines(
         )
 
     return pd.DataFrame(rows).sort_values(["Business", "Month"]).reset_index(drop=True)
-
-
-def clamp_to_nyc_bounds(latitude: float, longitude: float) -> tuple[float, float]:
-    lat = min(max(latitude, NYC_LAT_MIN), NYC_LAT_MAX)
-    lng = min(max(longitude, NYC_LNG_MIN), NYC_LNG_MAX)
-    return lat, lng

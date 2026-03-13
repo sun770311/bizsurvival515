@@ -1,7 +1,14 @@
+"""
+Shared UI styles for the NYC Business Survival project Streamlit app.
+"""
+
 import streamlit as st
 
 
 def apply_shared_styles() -> None:
+    """
+    Apply the shared UI styles to the Streamlit app.
+    """
     st.markdown(
         """
         <style>

@@ -1,3 +1,6 @@
+"""
+Prediction tools for the NYC Business Survival project Streamlit app.
+"""
 from __future__ import annotations
 
 from typing import Any
@@ -12,6 +15,9 @@ def predict_logistic_profile(
     pipeline: Any,
     profile_df: pd.DataFrame,
 ) -> dict[str, float | int]:
+    """
+    Predict the survival probability and class for a given profile.
+    """
     try:
         probability = float(pipeline.predict_proba(profile_df)[0, 1])
         predicted_class = int(pipeline.predict(profile_df)[0])
@@ -35,6 +41,9 @@ def predict_standard_cox_profile(
     profile_df: pd.DataFrame,
     survival_times: list[int] | None = None,
 ) -> dict[str, float]:
+    """
+    Predict the partial hazard and survival probabilities for a given profile.
+    """
     times = survival_times or STANDARD_SURVIVAL_TIMES
 
     feature_df = profile_df[kept_columns].copy()
@@ -57,6 +66,9 @@ def predict_time_varying_cox_profile(
     kept_columns: list[str],
     profile_df: pd.DataFrame,
 ) -> dict[str, float]:
+    """
+    Predict the partial hazard for a given time-varying profile.
+    """
     feature_df = profile_df[kept_columns].copy()
     scaled_array = scaler.transform(feature_df)
     scaled_df = pd.DataFrame(scaled_array, columns=kept_columns, index=feature_df.index)
@@ -72,6 +84,9 @@ def predict_time_varying_cox_profiles(
     kept_columns: list[str],
     profiles_df: pd.DataFrame,
 ) -> pd.DataFrame:
+    """
+    Predict the partial hazard for time-varying profiles.
+    """
     feature_df = profiles_df[kept_columns].copy()
     scaled_array = scaler.transform(feature_df)
     scaled_df = pd.DataFrame(scaled_array, columns=kept_columns, index=feature_df.index)
@@ -88,6 +103,9 @@ def top_positive_negative(
     coefficient_col: str,
     top_n: int = 10,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Get the top positive and negative coefficients from the summary dataframe.
+    """
     ordered = summary_df.sort_values(coefficient_col, ascending=False).copy()
     positive = ordered.head(top_n)
     negative = ordered.tail(top_n).sort_values(coefficient_col, ascending=True)

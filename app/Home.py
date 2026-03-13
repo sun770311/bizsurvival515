@@ -1,3 +1,6 @@
+"""
+Landing page for the NYC Business Survival project Streamlit app.
+"""
 from __future__ import annotations
 
 import base64
@@ -5,7 +8,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from utils.ui_styles import apply_shared_styles
+from app.utils.ui_styles import apply_shared_styles
 
 
 st.set_page_config(
@@ -164,4 +167,4 @@ st.markdown(
 clicked = st.button("Explore Now →")
 
 if clicked:
-    st.switch_page("pages/1_Map.py")
+    st.switch_page("pages/01_map.py")

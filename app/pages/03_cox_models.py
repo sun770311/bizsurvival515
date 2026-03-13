@@ -11,21 +11,24 @@ from utils.artifact_loader import (
     load_time_varying_cox_artifacts,
 )
 from utils.cox_feature_builder import (
-    DEFAULT_SURVIVAL_MONTHS,
-    NYC_LAT_MAX,
-    NYC_LAT_MIN,
-    NYC_LNG_MAX,
-    NYC_LNG_MIN,
+    CoxProfileInputs,
     baseline_standard_cox_profile,
     build_standard_cox_profile,
     build_time_varying_cox_profiles_over_time,
-    clamp_to_nyc_bounds,
     cox_category_display_to_column_map,
     cox_complaint_display_to_column_map,
     generate_time_varying_example_timelines,
     get_reference_median_lat_lng,
     prettify_cox_feature_name,
     summarize_generated_time_varying_timelines,
+)
+from utils.location_utils import (
+    DEFAULT_SURVIVAL_MONTHS,
+    NYC_LAT_MAX,
+    NYC_LAT_MIN,
+    NYC_LNG_MAX,
+    NYC_LNG_MIN,
+    clamp_to_nyc_bounds,
 )
 from utils.prediction_tools import (
     predict_standard_cox_profile,
@@ -394,14 +397,18 @@ with standard_tab:
                 float(spec["longitude"]),
             )
 
-            profile = build_standard_cox_profile(
-                kept_columns=standard_artifacts["kept_columns"],
-                reference_df=reference_df,
+            inputs = CoxProfileInputs(
                 selected_category_columns=list(spec["category_columns"]),
                 active_license_count=int(spec["active_license_count"]),
                 business_latitude=lat,
                 business_longitude=lng,
                 complaint_counts=dict(spec["complaint_counts"]),
+            )
+
+            profile = build_standard_cox_profile(
+                kept_columns=standard_artifacts["kept_columns"],
+                reference_df=reference_df,
+                inputs=inputs,
             )
 
             prediction = predict_standard_cox_profile(
@@ -486,6 +493,7 @@ with standard_tab:
             ),
             use_container_width=True,
         )
+
     st.markdown("---")
     st.markdown("#### Features Most Associated with Higher vs Lower Hazard")
     st.markdown(
@@ -494,7 +502,6 @@ with standard_tab:
 
         - **Positive coefficients** are associated with **higher hazard**, meaning higher relative closure risk.
         - **Negative coefficients** are associated with **lower hazard**, meaning lower relative closure risk.
-
         """
     )
 
@@ -763,7 +770,6 @@ with tv_tab:
           meaning higher current relative closure risk.
         - **Negative coefficients** are associated with **lower instantaneous hazard**,
           meaning lower current relative closure risk.
-
         """
     )
 
