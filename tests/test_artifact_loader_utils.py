@@ -23,6 +23,24 @@ from app.utils import artifact_loader
 class TestArtifactLoaderUtils(unittest.TestCase):
     """Tests for artifact loader helper functions."""
 
+    def test_load_logistic_artifacts_raises_for_missing_pickle(self):
+        """Raise FileNotFoundError when a required logistic artifact is missing."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            logistic_dir = Path(tmpdir) / "logistic"
+            logistic_dir.mkdir(parents=True, exist_ok=True)
+
+            with patch.object(artifact_loader, "LOGISTIC_DIR", logistic_dir):
+                load_fn = getattr(
+                    artifact_loader.load_logistic_artifacts,
+                    "__wrapped__",
+                    artifact_loader.load_logistic_artifacts,
+                )
+                with self.assertRaisesRegex(
+                    FileNotFoundError,
+                    "Expected artifact not found",
+                ):
+                    load_fn()
+
     def _write_minimal_logistic_dir(self, base_dir: Path) -> Path:
         """Create a minimal logistic artifact directory for testing."""
         logistic_dir = base_dir / "logistic"
