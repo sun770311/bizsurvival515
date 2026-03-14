@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import mlflow
 import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import mlflow
 import pandas as pd
 
 from pipeline.cox import CoxConfig, run_full_pipeline as run_cox_full_pipeline
@@ -293,16 +293,20 @@ def build_summary(
 def main() -> None:
     """Run preprocessing, logistic, Cox, and GeoJSON export pipelines."""
     args = parse_args()
+
     mlflow.set_tracking_uri("file:./mlruns")
     mlflow.set_experiment("business_survival_cox_models")
 
     with mlflow.start_run():
 
-        mlflow.log_params({
-            "penalizer": args.penalizer,
-            "variance_threshold": args.variance_threshold,
-            "study_end": str(args.study_end),
-        })
+        mlflow.log_params(
+            {
+                "penalizer": args.penalizer,
+                "variance_threshold": args.variance_threshold,
+                "study_end": str(args.study_end),
+            }
+        )
+
         paths = build_paths(args)
         study_end = pd.Timestamp(args.study_end)
 
@@ -328,7 +332,7 @@ def main() -> None:
             build_cox_config(args, paths, study_end)
         )
 
-        geojson_path = run_geojson_pipeline(
+        run_geojson_pipeline(
             GeoJSONConfig(
                 joined_data_path=paths.artifacts.joined_dataset_path,
                 licenses_path=paths.inputs.licenses_path,
@@ -336,9 +340,7 @@ def main() -> None:
             )
         )
 
-        # log artifacts directory
         mlflow.log_artifacts(str(args.output_dir))
-        
 
         print(
             json.dumps(
@@ -351,6 +353,7 @@ def main() -> None:
                 default=str,
             )
         )
+
 
 if __name__ == "__main__":
     main()
