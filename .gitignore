@@ -12,5 +12,4 @@ htmlcov/
 app/.streamlit/secrets.toml
 # MLflow runs
 mlruns/*
-outputs/
 *.pkl
