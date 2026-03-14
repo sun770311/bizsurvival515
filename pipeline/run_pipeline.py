@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import mlflow
 import argparse
 import json
 from dataclasses import dataclass
@@ -292,59 +293,64 @@ def build_summary(
 def main() -> None:
     """Run preprocessing, logistic, Cox, and GeoJSON export pipelines."""
     args = parse_args()
-    paths = build_paths(args)
-    study_end = pd.Timestamp(args.study_end)
+    mlflow.set_tracking_uri("file:./mlruns")
+    mlflow.set_experiment("business_survival_cox_models")
 
-    validate_input_paths(paths)
-    ensure_output_dirs(paths)
+    with mlflow.start_run():
 
-    joined_path = run_preprocess_pipeline(build_preprocess_config(args, paths))
-    paths = PipelinePaths(
-        inputs=paths.inputs,
-        outputs=paths.outputs,
-        artifacts=ArtifactPaths(
-            joined_dataset_path=joined_path,
-            geojson_path=paths.artifacts.geojson_path,
-        ),
-    )
+        mlflow.log_params({
+            "penalizer": args.penalizer,
+            "variance_threshold": args.variance_threshold,
+            "study_end": str(args.study_end),
+        })
+        paths = build_paths(args)
+        study_end = pd.Timestamp(args.study_end)
 
-    logistic_results = run_logistic_pipeline(
-        build_logistic_config(args, paths, study_end)
-    )
+        validate_input_paths(paths)
+        ensure_output_dirs(paths)
 
-    cox_results = run_cox_full_pipeline(
-        build_cox_config(args, paths, study_end)
-    )
+        joined_path = run_preprocess_pipeline(build_preprocess_config(args, paths))
 
-    geojson_path = run_geojson_pipeline(
-        GeoJSONConfig(
-            joined_data_path=paths.artifacts.joined_dataset_path,
-            licenses_path=paths.inputs.licenses_path,
-            output_path=paths.artifacts.geojson_path,
-        )
-    )
-
-    paths = PipelinePaths(
-        inputs=paths.inputs,
-        outputs=paths.outputs,
-        artifacts=ArtifactPaths(
-            joined_dataset_path=paths.artifacts.joined_dataset_path,
-            geojson_path=geojson_path,
-        ),
-    )
-
-    print(
-        json.dumps(
-            build_summary(
-                paths=paths,
-                logistic_results=logistic_results,
-                cox_results=cox_results,
+        paths = PipelinePaths(
+            inputs=paths.inputs,
+            outputs=paths.outputs,
+            artifacts=ArtifactPaths(
+                joined_dataset_path=joined_path,
+                geojson_path=paths.artifacts.geojson_path,
             ),
-            indent=2,
-            default=str,
         )
-    )
 
+        logistic_results = run_logistic_pipeline(
+            build_logistic_config(args, paths, study_end)
+        )
+
+        cox_results = run_cox_full_pipeline(
+            build_cox_config(args, paths, study_end)
+        )
+
+        geojson_path = run_geojson_pipeline(
+            GeoJSONConfig(
+                joined_data_path=paths.artifacts.joined_dataset_path,
+                licenses_path=paths.inputs.licenses_path,
+                output_path=paths.artifacts.geojson_path,
+            )
+        )
+
+        # log artifacts directory
+        mlflow.log_artifacts(str(args.output_dir))
+        
+
+        print(
+            json.dumps(
+                build_summary(
+                    paths=paths,
+                    logistic_results=logistic_results,
+                    cox_results=cox_results,
+                ),
+                indent=2,
+                default=str,
+            )
+        )
 
 if __name__ == "__main__":
     main()
