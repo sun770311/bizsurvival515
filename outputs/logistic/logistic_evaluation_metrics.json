@@ -38,8 +38,8 @@
       "support": 193.0
     }
   },
-  "mean_predicted_probability_survivors": 0.6185773001435085,
-  "mean_predicted_probability_nonsurvivors": 0.3893278369978453,
+  "mean_predicted_probability_survivors": 0.6185773001435092,
+  "mean_predicted_probability_nonsurvivors": 0.38932783699784607,
   "mannwhitney_u_statistic": 7111.0,
-  "mannwhitney_p_value": 1.2538499532866905e-10
+  "mannwhitney_p_value": 1.254257485542517e-10
 }

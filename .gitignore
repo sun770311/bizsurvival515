@@ -10,3 +10,6 @@ build/
 coverage.xml
 htmlcov/
 app/.streamlit/secrets.toml
+# MLflow runs
+mlruns/*
+*.pkl
