@@ -1,107 +1,153 @@
 # Milestones
 
-## Team Responsibilities
-- **Map:** Hannah  
-- **Model:** Aaron  
-- **Webpage:** Sreeraj, Pavan  
-- **Project Management:** Juan Pablo  
-- **Weekly stand-ups:** Included throughout the project timeline  
+## Team Responsibilities and Achievements
+* Hannah Sun
+   * Streamlit application and Mapbox visualization
+   * Local pipeline scripting and model implementation
+   * Refactoring modeling utilities and project structure
+   * Unit testing
+* Juan Pablo Reyes Martinez
+   * CI integration
+   * Pylint
+   * Project management and coordination
+* Sreeraj Parakkat
+   * Data pipeline in Databricks to continuously refresh license and 311 complaint datasets
+   * Delta lake tables and table preparation
+   * (Future reach goal) Automate dataset joining to replace `pipeline/preprocess.py`
+* Pavankumar Suresh
+   * Documentation updates
+   * Architecture diagrams
+   * (Future reach goal) MLflow experiment tracking integration
+* Aaron Lee
+   * Logistic regression modeling exploration
+   * Model interpretation and coefficient analysis
+
+* Weekly stand-ups: conducted throughout project to coordinate progress and resolve integration issues
 
 ---
 
-## Milestone 1 — Design Documents (Due: Feb 17)
+## Milestone 1 — Design Documents 
+### Due: Feb 17
 
 ### Goal
 Complete all required design documentation describing system purpose, architecture, and implementation plan.
 
-### Tasks (in priority order)
-(DONE)
-1. Finalize Functional Specification  
-2. Finalize Component Specification  
-3. Create Milestones plan  
-4. Review documents for consistency across components and use cases  
-5. Add design documents to repo
+### Tasks
+1. (DONE) First draft of Functional Specification  
+2. (DONE) First draft of Component Specification  
+3. (DONE) First draft of Milestones plan  
+4. (DONE) Review documents for consistency across components and use cases  
+5. (DONE) Add design documents to repo under `docs/`
 
 ---
 
-## Milestone 2 — Technology Review & First Demo (Due: Feb 24)
+## Milestone 2 — Technology Review & First Demo
+### Due: Feb 24
 
 ### Goal
-Select the appropriate Python library to support a key technology requirement (e.g., interactive map visualization) and demonstrate its feasibility.
+Select an appropriate Python library to support a key technology requirement (e.g., interactive map visualization) and demonstrate its feasibility.
 
-### Tasks (in priority order)
-1. Define the technology need and relevant use case (e.g., interactive spatial map)  
-2. Identify 2–3 candidate Python libraries (e.g., Bokeh, Dash, Google Maps, etc.)  
-3. Install and test each candidate library  
-4. Evaluate libraries based on:
+### Tasks
+1. (DONE) Define the technology need and relevant use case: predictive modeling
+2. (DONE) Identify 2–3 candidate Python libraries: Logistic Regression (`sklearn`), XGBoost (`xgboost`)
+3. (DONE) Install and test each candidate library  
+4. (DONE) Evaluate libraries based on:
    - ability to meet project requirements  
    - compatibility with Python 3 and project stack  
    - ease of use and documentation quality  
    - computational efficiency for dataset size  
    - stability / absence of blocking bugs  
-5. Produce side-by-side comparison of the libraries  
-6. Select final library and justify the choice  
-7. Document drawbacks and risks of the chosen library  
-8. Prepare demo (screen recording or live demonstration)  
-9. Write the Technology Review Markdown document  
-10. Upload writeup and demo to `docs/technology_review/` in GitHub  
+5. (DONE) Produce side-by-side comparison of the libraries  
+6. (DONE) Select final library and justify the choice: Logistic Regression (see `technology_review/`)
+7. (DONE) Document drawbacks and risks of the chosen library  
+8. (DONE) Prepare demo (screen recording or live demonstration)  
+9. (DONE) Write the Technology Review Markdown document  
+10. (DONE) Upload writeup and demo to `docs/technology_review/` in GitHub  
 
 ---
 
-## Milestone 3 — Core System Implementation (Feb 24 – March 3)
+## Milestone 3 — Pipeline Implementation
+### Feb 24 – March 13
 
 ### Goal
-Develop the core components of the system and ensure end-to-end functionality for main use cases.
+Develop the core data and modeling pipelines required for  the analysis.
 
-### Tasks (in priority order)
-1. Implement DataManager (data retrieval, filtering, formatting)  
-2. Implement GeoService (spatial queries and spatial joins)  
-3. Implement AnalyticsEngine (survival scoring and ranking)  
-4. Integrate components together (Data → Spatial → Model → Visualization flow)  
-5. Implement base map visualization and pins (look into Mapbox) 
-6. Verify data pipeline correctness and performance  
-7. Internal testing for Use Cases 1–3  
+### Completed Tasks
+#### Data Pipeline
+* Implemented Databricks jobs to ingest NYC Open Data
+* Automated updates to licenses and service requests datasets
+* Enable periodic downloading of updated CSVs
+
+#### Feature Engineering
+* Joined complaint data with business license records
+* Engineered temporal and categorical features representing neighborhood signals
+* Created a structured dataset suitable for survival modeling
+
+#### Modeling Pipelines
+* Implemented modular pipelines including:
+   * Logistic Regression pipeline
+   * Cox Proportional Hazards survival pipeline
+
+* Each pipeline includes:
+   * Dataset preparation
+   * Feature selection
+   * Model training
+   * Evaluation and interpretation
+
+#### Pipeline Refactoring
+* Refactored pipeline modules for improved maintainability
+* Organized code into structured pipeline components
 
 ---
 
-## Milestone 4 — Feature Completion & Integration (March 3 – March 10)
+## Milestone 4 — Testing and Code Quality
+### Feb 24 - March 13
 
 ### Goal
-Complete remaining features, improve usability, and prepare the full system for presentation.
+Ensure correctness, reliability, and maintainability of the pipeline codebase.
 
-### Tasks (in priority order)
-1. Implement ranking and analytics for Use Case 4 (category success ranking)  
-2. Improve UI and visualization clarity  
-3. Optimize performance for map rendering and queries  
-4. Conduct integration testing across all components  
-5. Fix bugs and refine user interactions  
-6. Prepare presentation materials and demo scenarios  
+### Completed Tasks
+* Implemented extensive unit tests for pipeline modules, including:
+   * Data validation utilities
+   * Modeling functions
+   * Feature engineering logic
+   * GeoJSON generation utilities
+* Achieved broad test coverage across core pipeline functionality
+* Integrated automated testing using GitHub Actions CI
+* Enforced code quality standards using pylint
+* Refactored code to resolve linting issues and improve readability
+* Validated end-to-end pipeline execution
 
 ---
 
-## Milestone 5 — Final Presentation Preparation (Due: March 10)
+## Milestone 5 — Application Implementation in Streamlit
+### Feb 24 - March 13
 
 ### Goal
-Prepare and rehearse the final project presentation with a fully working system.
+Build an interactive web application that allows users to explore results.
 
-### Tasks (in priority order)
-1. Finalize system functionality and ensure all use cases work  
-2. Prepare presentation slides  
-3. Prepare live demo walkthrough  
-4. Conduct full system testing and performance check  
-5. Practice final presentation with course staff  
-6. Incorporate feedback and finalize materials  
+### Completed Tasks
+* Implemented a Streamlit application with a multi-page structure
+* Built an interactive Mapbox visualization showing NYC businesses
+* Developed a pipeline to generate GeoJSON outputs for map rendering
+* Enabled hypothetical business creation and output analysis
+* Created pages explaining:
+   * Datasets used
+   * Methodology
+   * Model findings
+* Extensively tested application utilities
 
 ---
 
-## Milestone 6 — Final Submission & Presentation (Due: March 17)
+## Milestone 6 — Final Demo Preparation (Ongoing)
+### Presentation day: March 16
 
-### Goal
-Deliver final project presentation and submit complete, polished system.
-
-### Tasks (in priority order)
-1. Finalize codebase and documentation  
-2. Clean repository and ensure reproducibility  
-3. Verify all components and demos function correctly  
-4. Deliver final presentation  
-5. Submit final code and project materials  
+### Ongoing work
+* Prepare a video walkthrough demonstrating:
+   * Data pipeline
+   * Modeling approach
+   * Interactive application
+* Finalize documentation across the repository
+* Improve README and project explanations
+* Perform final testing and integration checks
+* Final presentation slides and script

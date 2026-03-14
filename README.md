@@ -3,397 +3,129 @@
 [![Build and Tests](https://github.com/sun770311/bizsurvival515/actions/workflows/build_tests.yml/badge.svg)](https://github.com/sun770311/bizsurvival515/actions/workflows/build_tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/sun770311/bizsurvival515/badge.svg)](https://coveralls.io/github/sun770311/bizsurvival515)
 
-## Overview
 
-New York City generates millions of public service requests each year.
-These complaints reflect real-world conditions such as sanitation
-issues, noise disturbances, infrastructure problems, and other
-neighborhood signals.
+## 🚀 Explore the Application! https://bizsurvival515.streamlit.app
 
-At the same time, thousands of businesses open and close across the
-city.
+# Overview
 
-This project explores an important urban question:
+Small businesses in New York City face significant uncertainty, with many opening and closing each year due to a range of economic, geographic, and environmental factors. Understanding what influences **business survival** can help entrepreneurs, investors, and policymakers make better decisions about where and how businesses operate.
 
-**Do neighborhood signals captured in city service complaints relate to
-business survival?**
+This project investigates whether **neighborhood conditions reflected in NYC 311 service complaints relate to business survival**. These complaints capture real-world signals about urban environments, including sanitation issues, infrastructure problems, noise disturbances, and other local conditions that may affect businesses.
 
-We built a data platform that integrates NYC Open Data sources,
-processes complaint datasets, links them with business licensing
-records, and exposes insights through an interactive analytical
-application.
+We built a data pipeline and deployed a Streamlit application to analyze business outcomes across New York City. The system includes predictive modeling, survival analysis, and geospatial visualization tools that enable interactive exploration of the data. Together, these components support the investigation of patterns associated with business survival using public urban datasets.
 
-The system combines:
-
--   data pipelines
--   predictive modeling
--   survival analysis
--   geospatial visualization
-
-to help explore **patterns associated with business survival in New York
-City.**
-
-------------------------------------------------------------------------
+## Project Type
+**Tool Project**
 
 # Team Members
 
--   Aaron Lee
--   Hannah Sun
--   Juan Pablo Reyes Martinez
--   Pavankumar Suresh
--   Sreeraj Parakkat
+Hannah Sun, Juan Pablo Reyes Martinez, Sreeraj Parakkat, Pavankumar Suresh, Aaron Lee
 
-Project Type: **Tool Project**
+# Questions of Interest
 
-------------------------------------------------------------------------
+* Can patterns in **311 complaints and neighborhood activity** help estimate the **probability that a business remains open for a certain period of time**?
+* Can we estimate the **changing risk of closure over time** based on neighborhood and business characteristics?
+* What **environmental and geographic factors** correlate with business survival versus closure?
 
-# Research Questions
+# Our Goal
 
-This project investigates how urban environmental signals relate to
-business survival.
+Our goal is to build an **interactive analytical tool** that enables users to explore relationships between neighborhood conditions and business outcomes.
 
-Key questions include:
+The system allows users to:
 
--   Can patterns in **311 complaints and local activity** help predict
-    whether a business remains open?
--   What **neighborhood and environmental factors** correlate with
-    business survival versus closure?
--   How do survival patterns vary across **boroughs, business
-    categories, and time periods**?
-
-------------------------------------------------------------------------
-
-# Product Overview
-
-The final product is an **interactive analytical tool** that allows
-users to explore relationships between city complaints and business
-outcomes.
-
-The application enables users to:
-
--   visualize businesses across NYC
--   analyze complaint patterns around businesses
--   explore survival probabilities
--   inspect model outputs and coefficients
--   investigate geographic patterns in complaints
-
-The system combines **machine learning models, survival analysis, and
-interactive geospatial visualization**.
-
-------------------------------------------------------------------------
-
-# System Architecture
-
-The platform integrates multiple components to ingest, process, model,
-and visualize data.
-
-    NYC Open Data APIs
-            │
-            ▼
-    Data Ingestion Pipelines (Python + Notebooks)
-            │
-            ▼
-    Preprocessing and Feature Engineering
-            │
-            ▼
-    Machine Learning & Survival Models
-            │
-            ▼
-    Model Artifacts and Processed Datasets
-            │
-            ▼
-    Streamlit Analytical Application
-            │
-            ▼
-    Mapbox Interactive Visualization
-![Architecture diagram](./images/Architecture_Diagram.png)
-
-------------------------------------------------------------------------
+* visualize businesses across NYC on an interactive map
+* explore complaint patterns surrounding businesses
+* examine model evaluation results and interpret coefficients
+* create hypothetical business scenarios and examine resulting survival curves
 
 # Data Sources
 
-### NYC Issued Business Licenses
+The project uses publicly available datasets from **NYC Open Data**, which are regularly updated.
 
-https://data.cityofnewyork.us/Business/Issued-Licenses/w7w3-xahh/about_data
+### NYC Issued Business Licenses [[Link]](https://data.cityofnewyork.us/Business/Issued-Licenses/w7w3-xahh/about_data)
 
-Contains information about licensed businesses in New York City
-including:
+This dataset contains information about licensed businesses in New York City, including:
 
--   license identifiers
--   business type
--   location information
--   issuance and expiration data
+- business identifiers  
+- industry classifications  
+- geographic location  
+- issuance and expiration dates  
 
-### NYC 311 Service Requests
+### NYC 311 Service Requests [[Link]](https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2020-to-Present/erm2-nwe9/about_data)
 
-https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2020-to-Present/erm2-nwe9/about_data
+This dataset records public service complaints submitted by residents, including:
 
-Contains public service complaint records including:
+- complaint types  
+- locations  
+- timestamps  
 
--   complaint type
--   complaint location
--   timestamps
--   agency responses
+These complaints provide signals about **neighborhood conditions surrounding businesses**.
 
-These complaints provide signals about **neighborhood conditions**.
+# System Architecture
 
-------------------------------------------------------------------------
+(placeholder - will embed image later)
 
-# Data Pipeline
+# Software Dependencies
 
-The project contains a modular data pipeline for preparing datasets used
-by models and visualizations.
+Software dependencies are defined in `pyproject.toml` and the Conda environment used to install them is specified in `environment.yml`.
 
-### Data Ingestion
+# How to Run the Project
 
-311 complaint data and business license datasets are collected and
-processed using notebooks and pipeline scripts.
+## Clone the Repository
 
-Files:
+```bash
+git clone https://github.com/sun770311/bizsurvival515.git
+cd bizsurvival515
+```
 
--   notebooks/nyc_311_service_request_job.py
--   notebooks/nyc_issued_licenses_job.py
+## Create the project environment and install all dependencies:
 
-### Data Preprocessing
+```bash
+conda env create -f environment.yml
+conda activate bizsurvival
+```
 
-Preprocessing prepares a combined dataset linking complaints to
-businesses.
+## Run the Data and Modeling Pipeline
 
-Key tasks include:
+```bash
+python -m pipeline.run_pipeline \
+  --data-dir tests/data \
+  --output-dir outputs \
+  --licenses-file licenses_sample.csv \
+  --service-reqs-file service_reqs_sample.csv \
+  --joined-file joined_dataset.csv \
+  --write-joined-to-data-dir
+```
 
--   cleaning datasets
--   joining business and complaint data
--   constructing modeling features
--   generating survival analysis inputs
+See `docs/pipeline.md` for full documentation on the pipeline.
 
-Implemented in:
+## Run the Interactive Streamlit Application
 
--   pipeline/preprocess.py
--   pipeline/utils.py
+The Streamlit application visualizes model outputs generated from the **full joined dataset**, which is over **2 GB in size**. These artifacts are produced by running the modeling pipeline on the complete dataset rather than the small sample datasets provided in `tests/data/`.
 
-### Feature Engineering
+Because the full dataset is large and the modeling steps can be computationally intensive, we recommend running the pipeline for the full dataset in a **high-resource environment**, such as:
 
-Feature builders generate variables used in predictive models.
+- Google Colab (GPU runtime)
+- a cloud compute environment
 
-Implemented in:
+Launch the interactive application locally:
 
--   app/utils/feature_builder.py
--   app/utils/cox_feature_builder.py
+```bash
+streamlit run app/home.py
+```
 
-These features capture signals such as:
+## Run Unit Tests
 
--   complaint counts
--   complaint categories
--   geographic attributes
--   business characteristics
+Run all tests using:
 
-------------------------------------------------------------------------
+```bash
+python -m unittest discover -s tests
+```
 
-# Modeling
+# Future Work
 
-## Logistic Regression Model
+* Add scripting to automatically generate and export pipeline outputs as model artifacts used by the Streamlit application.
 
-Predicts the probability that a business remains open.
+---
 
-Pipeline implementation:
-
--   pipeline/logistic.py
-
-Artifacts include:
-
--   logistic_pipeline.pkl
--   logistic_coefficient_summary.csv
--   logistic_evaluation_metrics.json
-
-## Cox Proportional Hazards Model
-
-Used to estimate survival probabilities over time.
-
-Implemented in:
-
--   pipeline/cox.py
-
-Artifacts include:
-
--   coxph_model.pkl
--   coxph_scaler.pkl
--   coxph_summary.csv
-
-## Time‑Varying Cox Model
-
-Captures how features change over time.
-
-Artifacts stored in:
-
--   outputs/cox/time_varying/
-
-These models enable deeper survival analysis beyond static prediction.
-
-------------------------------------------------------------------------
-
-# Model Artifacts
-
-Model artifacts are stored in the repository and loaded by the
-application.
-
-Locations include:
-
--   outputs/
--   app/artifacts/
-
-Artifacts include:
-
--   trained model pipelines
--   feature scalers
--   kept/dropped feature lists
--   evaluation metrics
--   model summaries
-
-------------------------------------------------------------------------
-
-# Interactive Streamlit Application
-
-The project includes a multi‑page analytical application built with
-**Streamlit**.
-
-Application directory:
-
--   app/
-
-Main pages include:
-
-### Home Page
-
-app/home.py
-
-### Map Visualization
-
-app/pages/01_map.py
-
-Displays businesses on an interactive Mapbox map.
-
-### Logistic Regression Analysis
-
-app/pages/02_logistic_regression.py
-
-Allows exploration of logistic regression model outputs.
-
-### Cox Survival Models
-
-app/pages/03_cox_models.py
-
-Displays survival model results.
-
-### Key Findings
-
-app/pages/04_findings.py
-
-Summarizes insights derived from the models.
-
-------------------------------------------------------------------------
-
-# Map Visualization
-
-The map visualization uses **Mapbox** to display business locations
-across NYC.
-
-Map files:
-
--   app/map_templates/index.html
--   app/map_templates/app.js
-
-Data source:
-
--   geojson/businesses.geojson
-
-Each point on the map represents a business and provides information
-including:
-
--   business attributes
--   geographic location
--   complaint signals
-
-------------------------------------------------------------------------
-
-# Running the Application
-
-## Install dependencies
-
-    conda env create -f environment.yml
-    conda activate bizsurvival515
-
-## Run the Streamlit app
-
-    streamlit run app/home.py
-
-------------------------------------------------------------------------
-
-# Project Structure
-
-    bizsurvival515
-    │
-    ├── app
-    │   ├── home.py
-    │   ├── pages
-    │   ├── utils
-    │   ├── artifacts
-    │   └── map_templates
-    │
-    ├── pipeline
-    │   ├── preprocess.py
-    │   ├── logistic.py
-    │   ├── cox.py
-    │   ├── mapbox.py
-    │   └── run_pipeline.py
-    │
-    ├── notebooks
-    │   └── data preparation notebooks
-    │
-    ├── outputs
-    │   ├── logistic
-    │   ├── cox
-    │   └── geojson
-    │
-    ├── tests
-    │
-    ├── docs
-    │
-    ├── environment.yml
-    └── pyproject.toml
-
-------------------------------------------------------------------------
-
-# Testing
-
-Run the test suite:
-
-    pytest
-
-Tests validate pipeline modules, utilities, and modeling components.
-
-------------------------------------------------------------------------
-
-# Continuous Integration
-
-GitHub Actions runs automated CI including:
-
--   dependency installation
--   running unit tests
--   computing coverage
--   reporting to Coveralls
-
-Workflow:
-
-`.github/workflows/build_tests.yml`
-
-------------------------------------------------------------------------
-
-# Future Improvements
-
-Potential extensions include:
-
--   additional NYC datasets
--   improved predictive models
--   real‑time complaint data integration
--   deployment as a public web dashboard
--   enhanced geospatial analytics
+#### A University of Washington MSDS DATA 515 project.
