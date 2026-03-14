@@ -61,10 +61,6 @@ This dataset records public service complaints submitted by residents, including
 
 These complaints provide signals about **neighborhood conditions surrounding businesses**.
 
-# System Architecture
-
-(placeholder - will embed image later)
-
 # Software Dependencies
 
 Software dependencies are defined in `pyproject.toml` and the Conda environment used to install them is specified in `environment.yml`.
