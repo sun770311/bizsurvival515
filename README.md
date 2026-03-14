@@ -153,7 +153,6 @@ processed using notebooks and pipeline scripts.
 
 Files:
 
--   notebooks/NYC 311 Service Request Job.ipynb
 -   notebooks/nyc_311_service_request_job.py
 -   notebooks/nyc_issued_licenses_job.py
 
