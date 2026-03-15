@@ -15,7 +15,7 @@ The pipeline performs the following steps:
 
 Two ingestion jobs fetch data from **NYC Open Data APIs** using the Socrata API and store them in **Delta Lake tables**. These jobs run in a **Databricks environment using PySpark**.
 
-## 311 Service Requests Job
+## 311 Service Requests Job (`databricks/nyc_311_service_request_job.py`)
 
 This job fetches new NYC 311 complaints and merges them into a Delta Lake table.
 
@@ -42,7 +42,7 @@ The job performs **incremental ingestion**, ensuring only new complaint records 
 
 ---
 
-## Issued Business Licenses Job
+## Issued Business Licenses Job (`databricks/nyc_issued_licenses_job.py`)
 
 This job fetches new NYC business licenses and merges them into a Delta Lake table.
 
@@ -85,10 +85,10 @@ These files serve as inputs to the preprocessing stage of the pipeline and corre
 
 # Pipeline Components
 
-The modeling pipeline is implemented in the `pipeline/` directory.
+The modeling pipeline is implemented in the `bizsurvival515/pipeline/` directory.
 
 ```markdown
-pipeline/
+bizsurvival515/pipeline/
 ├── preprocess.py
 ├── logistic.py
 ├── cox.py

@@ -2,7 +2,7 @@ name: Build and Tests
 
 on:
   push:
-    branches: [ "main", "toml_file", "mapbox", "streamlit-app", "Feature/readme" ]
+    branches: [ "main", "toml_file", "mapbox", "streamlit-app", "feature/readme" ]
   pull_request:
     branches: [ "main" ]
 
@@ -37,11 +37,11 @@ jobs:
       - name: Run Pylint
         # This will now strictly enforce a 10/10 score. If it fails, the CI fails!
         run: |
-          pylint app pipeline tests
+          pylint bizsurvival515
 
       - name: Run Unittest & Coverage
         run: |
-          coverage run -m unittest discover -s tests -v
+          coverage run -m unittest discover -s bizsurvival515/tests -v
           coverage report -m
 
       - name: Upload to Coveralls
