@@ -2,7 +2,7 @@ name: Build and Tests
 
 on:
   push:
-    branches: [ "main", "toml_file", "mapbox", "streamlit-app" ]
+    branches: [ "main", "toml_file", "mapbox", "streamlit-app", "Feature/readme" ]
   pull_request:
     branches: [ "main" ]
 
