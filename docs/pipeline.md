@@ -65,13 +65,15 @@ Primary merge key:
 
 license_nbr
 
----
-
-# Exporting Datasets
+## Exporting Datasets
 
 The ingestion jobs populate Delta Lake tables in Databricks. These tables are exported to CSV format for use in the modeling pipeline.
 
-The full datasets (CSV format) used in the project are available here:
+---
+
+# Datasets used for the Streamlit Application
+
+The issued licenses dataset is small enough to be directly downloaded from the NYC Open Data website. However, the full 311 Service Request dataset is too large to download directly. Databricks made processing this dataset possible by allowing us to ingest the data through the Socrata API and process it using distributed Spark jobs, enabling efficient handling of large volumes of service request records.
 
 **Full Business License Dataset**
 [https://drive.google.com/file/d/1l9bIxhXUNT4h9UXLxL6V9WMWgONch0W5/view?usp=sharing](https://drive.google.com/file/d/1l9bIxhXUNT4h9UXLxL6V9WMWgONch0W5/view?usp=sharing)
