@@ -28,5 +28,6 @@ dev = [
     "build"
 ]
 
-[tool.setuptools]
-packages = ["pipeline", "app"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bizsurvival515*"]

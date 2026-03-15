@@ -15,7 +15,7 @@ The pipeline performs the following steps:
 
 Two ingestion jobs fetch data from **NYC Open Data APIs** using the Socrata API and store them in **Delta Lake tables**. These jobs run in a **Databricks environment using PySpark**.
 
-## 311 Service Requests Job
+## 311 Service Requests Job (`databricks/nyc_311_service_request_job.py`)
 
 This job fetches new NYC 311 complaints and merges them into a Delta Lake table.
 
@@ -42,7 +42,7 @@ The job performs **incremental ingestion**, ensuring only new complaint records 
 
 ---
 
-## Issued Business Licenses Job
+## Issued Business Licenses Job (`databricks/nyc_issued_licenses_job.py`)
 
 This job fetches new NYC business licenses and merges them into a Delta Lake table.
 
@@ -65,13 +65,15 @@ Primary merge key:
 
 license_nbr
 
----
-
-# Exporting Datasets
+## Exporting Datasets
 
 The ingestion jobs populate Delta Lake tables in Databricks. These tables are exported to CSV format for use in the modeling pipeline.
 
-The full datasets (CSV format) used in the project are available here:
+---
+
+# Datasets used for the Streamlit Application
+
+The issued licenses dataset is small enough to be directly downloaded from the NYC Open Data website. However, the full 311 Service Request dataset is too large to download directly. Databricks made processing this dataset possible by allowing us to ingest the data through the Socrata API and process it using distributed Spark jobs, enabling efficient handling of large volumes of service request records.
 
 **Full Business License Dataset**
 [https://drive.google.com/file/d/1l9bIxhXUNT4h9UXLxL6V9WMWgONch0W5/view?usp=sharing](https://drive.google.com/file/d/1l9bIxhXUNT4h9UXLxL6V9WMWgONch0W5/view?usp=sharing)
@@ -85,10 +87,10 @@ These files serve as inputs to the preprocessing stage of the pipeline and corre
 
 # Pipeline Components
 
-The modeling pipeline is implemented in the `pipeline/` directory.
+The modeling pipeline is implemented in the `bizsurvival515/pipeline/` directory.
 
 ```markdown
-pipeline/
+bizsurvival515/pipeline/
 ├── preprocess.py
 ├── logistic.py
 ├── cox.py

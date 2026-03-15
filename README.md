@@ -84,9 +84,9 @@ conda activate bizsurvival
 ## Run the Data and Modeling Pipeline
 
 ```bash
-python -m pipeline.run_pipeline \
-  --data-dir tests/data \
-  --output-dir outputs \
+python -m bizsurvival515.pipeline.run_pipeline \
+  --data-dir bizsurvival515/tests/data \
+  --output-dir bizsurvival515/outputs \
   --licenses-file licenses_sample.csv \
   --service-reqs-file service_reqs_sample.csv \
   --joined-file joined_dataset.csv \
@@ -97,7 +97,7 @@ See `docs/pipeline.md` for full documentation on the pipeline.
 
 ## Run the Interactive Streamlit Application
 
-The Streamlit application visualizes model outputs generated from the **full joined dataset**, which is over **2 GB in size**. These artifacts are produced by running the modeling pipeline on the complete dataset rather than the small sample datasets provided in `tests/data/`.
+The Streamlit application visualizes model outputs generated from the **full joined dataset**, which is over **2 GB in size**. These artifacts are produced by running the modeling pipeline on the complete dataset rather than the small sample datasets provided in `bizsurvival515/tests/data/`.
 
 Because the full dataset is large and the modeling steps can be computationally intensive, we recommend running the pipeline for the full dataset in a **high-resource environment**, such as:
 
@@ -107,7 +107,7 @@ Because the full dataset is large and the modeling steps can be computationally 
 Launch the interactive application locally:
 
 ```bash
-streamlit run app/home.py
+streamlit run bizsurvival515/app/home.py
 ```
 
 ## Run Unit Tests
@@ -115,7 +115,7 @@ streamlit run app/home.py
 Run all tests using:
 
 ```bash
-python -m unittest discover -s tests
+python -m unittest discover -s bizsurvival515/tests -v
 ```
 
 # Future Work
