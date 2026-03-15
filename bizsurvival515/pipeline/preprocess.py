@@ -1,19 +1,74 @@
-# preprocess.py
-"""Preprocess NYC business license and 311 data into a monthly panel dataset.
+"""Preprocess NYC business license and 311 data into a joined monthly panel dataset.
 
-Input (raw CSVs from NYC Open Data):
-- licenses.csv
-- service_reqs_sample.csv or service_reqs.csv
+This module transforms raw NYC business license records and 311 service
+requests into a business-month panel suitable for downstream modeling and
+visualization. It cleans and standardizes source records, expands license
+intervals into monthly observations, aggregates business-category and 311
+complaint features into human-readable columns, computes representative
+business locations, assigns spatial location clusters, joins nearby 311
+requests to businesses within a geographic radius, and exports the final
+joined dataset.
+
+Inputs (raw CSVs from NYC Open Data):
+- licenses.csv or licenses_sample.csv
+- service_reqs.csv or service_reqs_sample.csv
 
 Processing steps:
-- Clean and standardize records
+- Load required source columns from raw license and 311 datasets
+- Clean and standardize identifiers, dates, categories, and coordinates
 - Expand licenses into a business-month panel
-- Encode categories as human-readable features
-- Spatially join 311 complaints to nearby businesses
-- Add location clusters and export final dataset
+- Encode business categories as human-readable feature columns
+- Compute representative business coordinates and location clusters
+- Spatially join nearby 311 complaints to businesses within a fixed radius
+- Encode complaint types as human-readable feature columns
+- Merge license, complaint, and location features into a final monthly panel
+- Save the final joined dataset to CSV
 
 Output:
 - joined_dataset.csv
+
+Classes:
+- PipelineConfig:
+  Stores input paths, output path, clustering settings, and join radius for
+  preprocessing.
+
+Functions:
+- sanitize_feature_name:
+  Convert a raw category or complaint label into a safe feature name.
+- make_unique_column_names:
+  Ensure generated feature names are unique by appending suffixes.
+- load_source_data:
+  Load required columns from the raw license and 311 source CSV files.
+- clean_licenses:
+  Clean and standardize raw business license records.
+- clean_service_requests:
+  Clean and standardize raw 311 service request records.
+- month_range:
+  Generate monthly start dates between two timestamps, inclusive.
+- expand_licenses_to_months:
+  Expand each license row into one row per active month.
+- build_license_panel:
+  Build the business-month license panel with category feature columns.
+- compute_business_locations:
+  Compute one representative coordinate pair per business.
+- assign_location_clusters:
+  Assign businesses to spatial clusters and attach cluster centers.
+- radius_join_requests_to_businesses:
+  Match 311 requests to nearby businesses within the configured radius.
+- build_complaint_panel:
+  Aggregate 311 complaints by business-month with complaint-type feature columns.
+- merge_final_dataset:
+  Merge license, complaint, and location features into the final joined dataset.
+- build_joined_dataset:
+  Run the full preprocessing workflow and return the final dataset.
+- save_joined_dataset:
+  Save the final joined dataset to CSV.
+- run_pipeline:
+  Execute preprocessing end-to-end and save the output dataset.
+- parse_args:
+  Parse command-line arguments into a PipelineConfig instance.
+- main:
+  Execute the preprocessing pipeline from the command line.
 """
 
 from __future__ import annotations
@@ -60,7 +115,16 @@ SERVICE_REQUEST_SOURCE_COLUMNS = [
 
 @dataclass(frozen=True)
 class PipelineConfig:
-    """Configuration for preprocessing pipeline paths and parameters."""
+    """Store configuration values for the preprocessing pipeline.
+
+    Attributes:
+        licenses_path: Path to the raw business license CSV file.
+        service_reqs_path: Path to the raw 311 service-request CSV file.
+        output_path: Path where the joined monthly panel CSV will be written.
+        location_k: Number of KMeans location clusters to create.
+        radius_radians: Join radius, in radians, for matching 311 requests to
+            nearby businesses.
+    """
 
     licenses_path: Path
     service_reqs_path: Path
@@ -70,7 +134,15 @@ class PipelineConfig:
 
 
 def sanitize_feature_name(raw_name: str, prefix: str) -> str:
-    """Convert a raw category/complaint label into a safe column name."""
+    """Convert a raw category or complaint label into a safe feature column name.
+
+    Args:
+        raw_name: Raw category or complaint label.
+        prefix: Prefix to prepend to the sanitized feature name.
+
+    Returns:
+        A lowercase, underscore-delimited feature name with the requested prefix.
+    """
     cleaned = str(raw_name).strip().lower()
     cleaned = cleaned.replace("&", " and ")
     cleaned = re.sub(r"['’]", "", cleaned)
@@ -84,7 +156,14 @@ def sanitize_feature_name(raw_name: str, prefix: str) -> str:
 
 
 def make_unique_column_names(names: Iterable[str]) -> list[str]:
-    """Ensure generated column names are unique by appending suffixes."""
+    """Ensure generated column names are unique by appending numeric suffixes.
+
+    Args:
+        names: Proposed column names that may contain duplicates.
+
+    Returns:
+        A list of unique column names preserving the original order.
+    """
     counts: dict[str, int] = {}
     unique_names: list[str] = []
 
@@ -104,7 +183,21 @@ def load_source_data(
     licenses_path: Path,
     service_reqs_path: Path,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load required columns from source CSV files."""
+    """Load required source columns from raw license and 311 CSV files.
+
+    Args:
+        licenses_path: Path to the raw business license CSV file.
+        service_reqs_path: Path to the raw 311 service-request CSV file.
+
+    Returns:
+        A tuple containing the raw license dataframe and raw service-request dataframe.
+
+    Raises:
+        FileNotFoundError: If one or both source files do not exist.
+        pd.errors.EmptyDataError: If one or both source files are empty.
+        ValueError: If required source columns are missing.
+        OSError: If an I/O error occurs while reading a source file.
+    """
     licenses = pd.read_csv(
         licenses_path,
         usecols=LICENSE_SOURCE_COLUMNS,
@@ -119,7 +212,15 @@ def load_source_data(
 
 
 def clean_licenses(licenses: pd.DataFrame) -> pd.DataFrame:
-    """Clean and standardize license records."""
+    """Clean and standardize raw business license records.
+
+    Args:
+        licenses: Raw business license dataframe.
+
+    Returns:
+        A cleaned dataframe with standardized strings, parsed dates, numeric
+        coordinates, monthly issue/expiration fields, and invalid rows removed.
+    """
     cleaned = licenses.copy()
 
     string_columns = [
@@ -172,7 +273,15 @@ def clean_licenses(licenses: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_service_requests(service_reqs: pd.DataFrame) -> pd.DataFrame:
-    """Clean and standardize 311 service request records."""
+    """Clean and standardize raw 311 service request records.
+
+    Args:
+        service_reqs: Raw 311 service-request dataframe.
+
+    Returns:
+        A cleaned dataframe with standardized identifiers and complaint types,
+        parsed timestamps, numeric coordinates, and a monthly date column.
+    """
     cleaned = service_reqs.copy()
 
     cleaned["Unique Key"] = cleaned["Unique Key"].astype(str).str.strip()
@@ -216,12 +325,29 @@ def clean_service_requests(service_reqs: pd.DataFrame) -> pd.DataFrame:
 
 
 def month_range(start: pd.Timestamp, end: pd.Timestamp) -> pd.DatetimeIndex:
-    """Return monthly start dates from start to end, inclusive."""
+    """Generate monthly start dates between two timestamps, inclusive.
+
+    Args:
+        start: Start month.
+        end: End month.
+
+    Returns:
+        A DatetimeIndex containing monthly start dates from ``start`` to ``end``,
+        inclusive.
+    """
     return pd.date_range(start=start, end=end, freq="MS")
 
 
 def expand_licenses_to_months(licenses: pd.DataFrame) -> pd.DataFrame:
-    """Expand each license row into one row per active month."""
+    """Expand each license row into one row per active month.
+
+    Args:
+        licenses: Cleaned license dataframe containing issue and expiration months.
+
+    Returns:
+        A dataframe where each original license record is expanded across all
+        active months between issue and expiration, inclusive.
+    """
     expanded = licenses.copy()
     expanded["month"] = expanded.apply(
         lambda row: month_range(row["issue_month"], row["expire_month"]),
@@ -235,7 +361,18 @@ def build_license_panel(
     licenses: pd.DataFrame,
     licenses_expanded: pd.DataFrame,
 ) -> tuple[pd.DataFrame, list[str]]:
-    """Build business-month license panel with human-readable category columns."""
+    """Build the business-month license panel with category feature columns.
+
+    Args:
+        licenses: Cleaned license dataframe at the original license-record level.
+        licenses_expanded: License dataframe expanded to one row per active month.
+
+    Returns:
+        A tuple containing:
+        - A business-month license panel with active license counts, category
+          features, and timing fields.
+        - A list of generated business-category feature column names.
+    """
     first_license_dates = (
         licenses.groupby("Business Unique ID")["Initial Issuance Date"]
         .min()
@@ -332,7 +469,15 @@ def build_license_panel(
 def compute_business_locations(
     licenses: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Compute one representative median coordinate pair per business."""
+    """Compute one representative median coordinate pair per business.
+
+    Args:
+        licenses: Cleaned license dataframe containing latitude and longitude.
+
+    Returns:
+        A dataframe with one row per business containing representative median
+        latitude and longitude values.
+    """
     business_locations = (
         licenses.dropna(subset=["Latitude", "Longitude"])
         .groupby("Business Unique ID")[["Latitude", "Longitude"]]
@@ -353,7 +498,20 @@ def assign_location_clusters(
     business_locations: pd.DataFrame,
     location_k: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Assign location clusters and attach cluster center coordinates."""
+    """Assign businesses to spatial clusters and attach cluster center coordinates.
+
+    Args:
+        business_locations: Business-level dataframe containing representative coordinates.
+        location_k: Number of spatial clusters to create when enough businesses exist.
+
+    Returns:
+        A tuple containing:
+        - The business-location dataframe with cluster assignments and center coordinates.
+        - A dataframe of cluster centers.
+
+    Raises:
+        ValueError: If KMeans receives invalid clustering parameters.
+    """
     clustered = business_locations.copy()
 
     if clustered.empty:
@@ -398,7 +556,17 @@ def radius_join_requests_to_businesses(
     service_reqs: pd.DataFrame,
     radius_radians: float,
 ) -> pd.DataFrame:
-    """Match 311 requests to nearby businesses within the configured radius."""
+    """Match 311 requests to nearby businesses within the configured geographic radius.
+
+    Args:
+        business_locations: Business-level dataframe containing representative coordinates.
+        service_reqs: Cleaned 311 service-request dataframe.
+        radius_radians: Join radius, in radians, for matching requests to businesses.
+
+    Returns:
+        A dataframe of matched request-business pairs containing request ID,
+        month, complaint type, and business ID.
+    """
     biz = business_locations.dropna(
         subset=["business_latitude", "business_longitude"]
     ).copy()
@@ -443,7 +611,17 @@ def radius_join_requests_to_businesses(
 def build_complaint_panel(
     req_business: pd.DataFrame,
 ) -> tuple[pd.DataFrame, list[str]]:
-    """Aggregate 311 complaints by business-month using human-readable columns."""
+    """Aggregate 311 complaints by business-month using complaint-type feature columns.
+
+    Args:
+        req_business: Dataframe of matched request-business pairs.
+
+    Returns:
+        A tuple containing:
+        - A business-month complaint panel with total complaint counts and
+          complaint-type feature columns.
+        - A list of generated complaint-type feature column names.
+    """
     if req_business.empty:
         complaint_panel = pd.DataFrame(columns=["business_id", "month", "total_311"])
         return complaint_panel, []
@@ -507,7 +685,19 @@ def merge_final_dataset(
     category_columns: list[str],
     complaint_columns: list[str],
 ) -> pd.DataFrame:
-    """Merge license, complaint, and location data into final dataset."""
+    """Merge license, complaint, and location features into the final joined dataset.
+
+    Args:
+        license_panel: Business-month license panel.
+        complaint_panel: Business-month complaint panel.
+        business_locations: Business-level location dataframe with cluster features.
+        category_columns: Generated business-category feature column names.
+        complaint_columns: Generated complaint-type feature column names.
+
+    Returns:
+        A sorted joined monthly panel containing license features, complaint
+        features, location features, and aggregated summary columns.
+    """
     joined = license_panel.merge(
         complaint_panel,
         on=["business_id", "month"],
@@ -567,7 +757,20 @@ def merge_final_dataset(
 
 
 def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
-    """Run the full preprocessing pipeline and return the final dataset."""
+    """Run the full preprocessing workflow and return the final joined dataset.
+
+    Args:
+        config: Configuration specifying source paths, output settings,
+            clustering parameters, and join radius.
+
+    Returns:
+        The final joined business-month panel dataframe.
+
+    Raises:
+        FileNotFoundError: If one or more source files are missing.
+        ValueError: If required source columns are missing or preprocessing fails.
+        OSError: If an I/O error occurs while reading source files.
+    """
     licenses_raw, service_reqs_raw = load_source_data(
         config.licenses_path,
         config.service_reqs_path,
@@ -608,20 +811,51 @@ def build_joined_dataset(config: PipelineConfig) -> pd.DataFrame:
 
 
 def save_joined_dataset(joined: pd.DataFrame, output_path: Path) -> Path:
-    """Save the final dataset to CSV and return the output path."""
+    """Save the final joined dataset to CSV and return the output path.
+
+    Args:
+        joined: Final joined business-month panel dataframe.
+        output_path: Destination path for the CSV file.
+
+    Returns:
+        The path where the dataset was written.
+
+    Raises:
+        OSError: If an I/O error occurs while writing the output file.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     joined.to_csv(output_path, index=False)
     return output_path
 
 
 def run_pipeline(config: PipelineConfig) -> Path:
-    """Execute preprocessing pipeline end-to-end and save output."""
+    """Execute preprocessing end-to-end and save the output dataset.
+
+    Args:
+        config: Configuration specifying source paths, output path,
+            clustering parameters, and join radius.
+
+    Returns:
+        The path to the written joined dataset CSV.
+
+    Raises:
+        FileNotFoundError: If one or more source files are missing.
+        ValueError: If preprocessing fails.
+        OSError: If an I/O error occurs while reading or writing files.
+    """
     joined = build_joined_dataset(config)
     return save_joined_dataset(joined, config.output_path)
 
 
 def parse_args() -> PipelineConfig:
-    """Parse command-line arguments into a PipelineConfig."""
+    """Parse command-line arguments and construct a PipelineConfig instance.
+
+    Args:
+        None.
+
+    Returns:
+        A PipelineConfig populated from command-line argument values.
+    """
     parser = argparse.ArgumentParser(
         description="Build joined NYC business + 311 monthly panel dataset."
     )

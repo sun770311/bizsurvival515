@@ -1,4 +1,64 @@
-"""Run the full business survival modeling pipeline end to end."""
+"""Run the full business survival pipeline end to end.
+
+This module orchestrates the complete business survival workflow, including
+data preprocessing, logistic-regression modeling, Cox survival modeling, and
+GeoJSON generation for Mapbox visualization. It parses command-line options,
+builds consistent input and output paths, validates required raw inputs,
+constructs configuration objects for each sub-pipeline, executes each stage
+in sequence, and prints a JSON summary of generated artifacts and model results.
+
+Inputs:
+- licenses.csv or licenses_sample.csv
+- service_reqs.csv or service_reqs_sample.csv
+
+Processing steps:
+- Parse command-line arguments for pipeline execution
+- Build input, output, and artifact paths
+- Validate that required raw input files exist
+- Create output directories as needed
+- Run preprocessing to generate joined_dataset.csv
+- Run logistic regression training and artifact export
+- Run Cox survival modeling and artifact export
+- Run GeoJSON generation for Mapbox visualization
+- Print a JSON summary of pipeline inputs, outputs, and results
+
+Outputs:
+- joined_dataset.csv
+- Logistic model artifacts and evaluation outputs
+- Cox model artifacts and summaries
+- businesses.geojson
+- Printed JSON pipeline summary
+
+Classes:
+- InputPaths:
+  Stores raw input file paths used by the pipeline.
+- OutputDirs:
+  Stores output directories for each major pipeline stage.
+- ArtifactPaths:
+  Stores generated artifact file paths produced by the pipeline.
+- PipelinePaths:
+  Groups input, output, and artifact paths into one container.
+
+Functions:
+- parse_args:
+  Parse command-line arguments for the full pipeline runner.
+- build_paths:
+  Build grouped input, output, and artifact paths from parsed arguments.
+- validate_input_paths:
+  Validate that required raw input files exist.
+- ensure_output_dirs:
+  Create output directories needed by the pipeline.
+- build_preprocess_config:
+  Build the preprocessing configuration object.
+- build_logistic_config:
+  Build the logistic modeling configuration object.
+- build_cox_config:
+  Build the Cox modeling configuration object.
+- build_summary:
+  Assemble a JSON-serializable summary of pipeline inputs and outputs.
+- main:
+  Execute the full end-to-end pipeline from the command line.
+"""
 
 from __future__ import annotations
 
@@ -27,7 +87,13 @@ EARTH_RADIUS_METERS = 6_371_000
 
 @dataclass(frozen=True)
 class InputPaths:
-    """Container for raw input paths."""
+    """Store raw input file paths used by the pipeline.
+
+    Attributes:
+        data_dir: Root directory containing the raw input files.
+        licenses_path: Path to the business-license input CSV file.
+        service_reqs_path: Path to the 311 service-request input CSV file.
+    """
 
     data_dir: Path
     licenses_path: Path
@@ -36,7 +102,15 @@ class InputPaths:
 
 @dataclass(frozen=True)
 class OutputDirs:
-    """Container for pipeline output directories."""
+    """Store output directories for each major pipeline stage.
+
+    Attributes:
+        root_dir: Root output directory for the full pipeline.
+        preprocess_dir: Directory for preprocessing outputs.
+        logistic_dir: Directory for logistic-model artifacts.
+        cox_dir: Directory for Cox-model artifacts.
+        geojson_dir: Directory for GeoJSON outputs.
+    """
 
     root_dir: Path
     preprocess_dir: Path
@@ -47,7 +121,12 @@ class OutputDirs:
 
 @dataclass(frozen=True)
 class ArtifactPaths:
-    """Container for generated artifact file paths."""
+    """Store generated artifact file paths produced by the pipeline.
+
+    Attributes:
+        joined_dataset_path: Path to the generated joined monthly panel CSV.
+        geojson_path: Path to the generated GeoJSON file.
+    """
 
     joined_dataset_path: Path
     geojson_path: Path
@@ -55,7 +134,13 @@ class ArtifactPaths:
 
 @dataclass(frozen=True)
 class PipelinePaths:
-    """Container for all grouped pipeline paths."""
+    """Group all input, output, and artifact paths used by the pipeline.
+
+    Attributes:
+        inputs: Raw input file paths.
+        outputs: Output directories for each pipeline stage.
+        artifacts: Generated artifact file paths.
+    """
 
     inputs: InputPaths
     outputs: OutputDirs
@@ -63,7 +148,14 @@ class PipelinePaths:
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for the full pipeline runner."""
+    """Parse command-line arguments for the full pipeline runner.
+
+    Args:
+        None.
+
+    Returns:
+        An argparse namespace containing parsed command-line argument values.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "Run the full sampled-data pipeline: preprocess, logistic, "
@@ -163,7 +255,16 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_paths(args: argparse.Namespace) -> PipelinePaths:
-    """Build all file and directory paths used by the pipeline."""
+    """Build grouped input, output, and artifact paths from parsed arguments.
+
+    Args:
+        args: Parsed command-line arguments containing data locations,
+            output locations, and file-name options.
+
+    Returns:
+        A PipelinePaths object containing resolved input paths, output
+        directories, and artifact paths.
+    """
     output_dirs = OutputDirs(
         root_dir=args.output_dir,
         preprocess_dir=args.output_dir / "preprocess",
@@ -196,7 +297,17 @@ def build_paths(args: argparse.Namespace) -> PipelinePaths:
 
 
 def validate_input_paths(paths: PipelinePaths) -> None:
-    """Raise an error if any required raw input files are missing."""
+    """Validate that required raw input files exist before pipeline execution.
+
+    Args:
+        paths: Grouped pipeline paths containing raw input file locations.
+
+    Returns:
+        None.
+
+    Raises:
+        FileNotFoundError: If one or more required raw input files are missing.
+    """
     missing_inputs = [
         str(path)
         for path in (
@@ -210,7 +321,17 @@ def validate_input_paths(paths: PipelinePaths) -> None:
 
 
 def ensure_output_dirs(paths: PipelinePaths) -> None:
-    """Create all pipeline output directories if they do not already exist."""
+    """Create all required pipeline output directories if they do not already exist.
+
+    Args:
+        paths: Grouped pipeline paths containing stage-specific output directories.
+
+    Returns:
+        None.
+
+    Raises:
+        OSError: If an output directory cannot be created.
+    """
     for directory in (
         paths.outputs.preprocess_dir,
         paths.outputs.logistic_dir,
@@ -224,7 +345,15 @@ def build_preprocess_config(
     args: argparse.Namespace,
     paths: PipelinePaths,
 ) -> PipelineConfig:
-    """Build the preprocessing configuration object."""
+    """Build the preprocessing configuration object from parsed arguments and paths.
+
+    Args:
+        args: Parsed command-line arguments containing preprocessing options.
+        paths: Grouped pipeline paths containing input and output locations.
+
+    Returns:
+        A PipelineConfig configured for preprocessing.
+    """
     radius_radians = args.radius_meters / EARTH_RADIUS_METERS
     return PipelineConfig(
         licenses_path=paths.inputs.licenses_path,
@@ -240,7 +369,16 @@ def build_logistic_config(
     paths: PipelinePaths,
     study_end: pd.Timestamp,
 ) -> LogisticConfig:
-    """Build the logistic regression configuration object."""
+    """Build the logistic modeling configuration object for the pipeline run.
+
+    Args:
+        args: Parsed command-line arguments containing logistic-model options.
+        paths: Grouped pipeline paths containing artifact and output locations.
+        study_end: Study end date used for model preparation and evaluation.
+
+    Returns:
+        A LogisticConfig configured for logistic regression modeling.
+    """
     return LogisticConfig(
         data_path=paths.artifacts.joined_dataset_path,
         output_dir=paths.outputs.logistic_dir,
@@ -260,7 +398,16 @@ def build_cox_config(
     paths: PipelinePaths,
     study_end: pd.Timestamp,
 ) -> CoxConfig:
-    """Build the Cox modeling configuration object."""
+    """Build the Cox modeling configuration object for the pipeline run.
+
+    Args:
+        args: Parsed command-line arguments containing Cox-model options.
+        paths: Grouped pipeline paths containing artifact and output locations.
+        study_end: Study end date used for Cox-model preparation and fitting.
+
+    Returns:
+        A CoxConfig configured for Cox survival modeling.
+    """
     return CoxConfig(
         data_path=paths.artifacts.joined_dataset_path,
         output_dir=paths.outputs.cox_dir,
@@ -275,7 +422,16 @@ def build_summary(
     logistic_results: dict,
     cox_results: dict,
 ) -> dict:
-    """Assemble a JSON-serializable summary of pipeline inputs and outputs."""
+    """Assemble a JSON-serializable summary of pipeline inputs, outputs, and results.
+
+    Args:
+        paths: Grouped pipeline paths containing input, output, and artifact locations.
+        logistic_results: Result dictionary returned by the logistic pipeline.
+        cox_results: Result dictionary returned by the Cox pipeline.
+
+    Returns:
+        A dictionary summarizing input paths, output paths, and model results.
+    """
     return {
         "inputs": {
             "licenses_path": str(paths.inputs.licenses_path),
@@ -293,7 +449,19 @@ def build_summary(
 
 
 def main() -> None:
-    """Run preprocessing, logistic, Cox, and GeoJSON export pipelines."""
+    """Run preprocessing, logistic, Cox, and GeoJSON pipelines end to end.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+
+    Raises:
+        FileNotFoundError: If one or more required raw input files are missing.
+        ValueError: If a downstream pipeline configuration or processing step fails.
+        OSError: If an I/O error occurs while creating directories or writing outputs.
+    """
     args = parse_args()
     paths = build_paths(args)
     study_end = pd.Timestamp(args.study_end)

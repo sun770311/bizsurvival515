@@ -1,4 +1,66 @@
-"""Inspect trained logistic regression survival model."""
+"""Inspect a trained logistic survival model using hypothetical business profiles.
+
+This module loads exported logistic regression model artifacts, prints saved
+evaluation metrics and coefficient summaries, constructs a baseline business
+profile from the balanced training split, generates several hypothetical
+business variants, scores them with the trained pipeline, and checks whether
+predicted survival probabilities move in the directions implied by the model
+coefficients.
+
+Inputs:
+- logistic_pipeline.pkl
+- logistic_kept_columns.pkl
+- logistic_evaluation_metrics.json
+- logistic_coefficient_summary.csv
+- X_train_balanced_split.csv
+
+Processing steps:
+- Load trained logistic model artifacts and training split data
+- Print saved evaluation metrics and top coefficients
+- Build a realistic baseline profile from training-set medians
+- Generate hypothetical business profiles by modifying selected features
+- Score hypothetical profiles with the trained pipeline
+- Compare predicted survival probabilities to the baseline profile
+- Check whether predicted directions align with coefficient signs
+
+Outputs:
+- Printed model metrics
+- Printed top positive and negative coefficients
+- Printed hypothetical profile prediction table
+- Printed hypothetical expectation checks
+
+Classes:
+- InspectConfig:
+  Stores the artifact directory used for logistic model inspection.
+
+Functions:
+- load_artifacts:
+  Load saved logistic model artifacts and training split data.
+- print_model_metrics:
+  Print saved evaluation metrics.
+- build_baseline_profile:
+  Construct a one-row baseline profile from training-set medians.
+- build_hypothetical_profiles:
+  Build the baseline profile and several hypothetical business variants.
+- predict_profiles:
+  Generate survival predictions for hypothetical profiles.
+- get_coefficient_direction:
+  Return the expected prediction direction implied by a coefficient sign.
+- check_hypothetical_expectations:
+  Compare observed profile predictions to coefficient-based expectations.
+- print_expectation_results:
+  Print the expectation-check results.
+- print_prediction_results:
+  Print hypothetical profile predictions in sorted order.
+- print_top_coefficients:
+  Print the top positive and negative model coefficients.
+- run_inspection:
+  Run the full logistic model inspection workflow.
+- parse_args:
+  Parse command-line arguments into an InspectConfig instance.
+- main:
+  Execute logistic model inspection from the command line.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +76,12 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class InspectConfig:
-    """Configuration for logistic model inspection."""
+    """Store configuration values for logistic model inspection.
+
+    Attributes:
+        artifacts_dir: Directory containing saved logistic model artifacts and
+            inspection inputs.
+    """
 
     artifacts_dir: Path
 
@@ -22,7 +89,27 @@ class InspectConfig:
 def load_artifacts(
     config: InspectConfig,
 ) -> tuple[Any, list[str], dict[str, Any], pd.DataFrame, pd.DataFrame]:
-    """Load saved model artifacts."""
+    """Load saved logistic model artifacts and training split data from disk.
+
+    Args:
+        config: Configuration specifying the artifact directory to load from.
+
+    Returns:
+        A tuple containing:
+        - The fitted logistic pipeline.
+        - The list of kept feature columns.
+        - A dictionary of saved evaluation metrics.
+        - The logistic coefficient summary dataframe.
+        - The balanced training-split dataframe used for baseline construction.
+
+    Raises:
+        FileNotFoundError: If one or more required artifact files are missing.
+        pickle.UnpicklingError: If the saved pipeline or kept-columns file cannot
+            be unpickled successfully.
+        json.JSONDecodeError: If the metrics JSON file is not valid JSON.
+        pd.errors.EmptyDataError: If a required CSV file is empty.
+        OSError: If an I/O error occurs while reading an artifact file.
+    """
     base = config.artifacts_dir
 
     with (base / "logistic_pipeline.pkl").open("rb") as file_obj:
@@ -41,7 +128,14 @@ def load_artifacts(
 
 
 def print_model_metrics(metrics: dict[str, Any]) -> None:
-    """Print evaluation metrics."""
+    """Print saved evaluation metrics for the trained logistic model.
+
+    Args:
+        metrics: Dictionary of metric names and values to display.
+
+    Returns:
+        None.
+    """
     print("\nMODEL METRICS\n")
     for key, value in metrics.items():
         if isinstance(value, float):
@@ -54,7 +148,20 @@ def build_baseline_profile(
     kept_columns: list[str],
     train_split: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Create realistic baseline feature vector from training medians."""
+    """Build a one-row baseline profile from training-set feature medians.
+
+    Args:
+        kept_columns: Feature columns retained by the trained logistic model.
+        train_split: Balanced training-split dataframe used to derive baseline values.
+
+    Returns:
+        A one-row dataframe indexed as ``baseline`` and aligned to the model's
+        kept feature columns.
+
+    Raises:
+        ValueError: If one or more kept feature columns are missing from the
+            training split.
+    """
     available_columns = [column for column in kept_columns if column in train_split.columns]
     missing_columns = [column for column in kept_columns if column not in train_split.columns]
 
@@ -79,7 +186,20 @@ def build_hypothetical_profiles(
     kept_columns: list[str],
     train_split: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Construct hypothetical business profiles from a realistic baseline."""
+    """Construct a baseline profile together with several hypothetical business variants.
+
+    Args:
+        kept_columns: Feature columns retained by the trained logistic model.
+        train_split: Balanced training-split dataframe used to derive the baseline profile.
+
+    Returns:
+        A dataframe containing the baseline profile and the hypothetical profiles
+        used for model inspection.
+
+    Raises:
+        ValueError: If baseline profile construction fails because kept feature
+            columns are missing from the training split.
+    """
     baseline = build_baseline_profile(kept_columns, train_split)
 
     profiles: list[pd.DataFrame] = [baseline.copy()]
@@ -110,7 +230,21 @@ def build_hypothetical_profiles(
 
 
 def predict_profiles(pipeline: Any, profiles: pd.DataFrame) -> pd.DataFrame:
-    """Generate predictions for hypothetical profiles."""
+    """Generate predicted survival probabilities and classes for hypothetical profiles.
+
+    Args:
+        pipeline: Fitted logistic modeling pipeline used to score profiles.
+        profiles: Dataframe of hypothetical profiles to predict.
+
+    Returns:
+        A dataframe containing each profile name, predicted survival probability,
+        and predicted class label.
+
+    Raises:
+        ValueError: If the pipeline receives incompatible feature input.
+        AttributeError: If the provided pipeline does not implement the expected
+            prediction methods.
+    """
     probabilities = pipeline.predict_proba(profiles)[:, 1]
     predictions = pipeline.predict(profiles)
 
@@ -127,7 +261,18 @@ def get_coefficient_direction(
     coef_summary: pd.DataFrame,
     feature_name: str,
 ) -> str:
-    """Return expected direction implied by the coefficient sign."""
+    """Return the expected direction of prediction change implied by a feature coefficient.
+
+    Args:
+        coef_summary: Coefficient summary dataframe containing feature names and coefficients.
+        feature_name: Name of the feature whose coefficient direction should be checked.
+
+    Returns:
+        ``"above_baseline"`` if the coefficient is positive,
+        ``"below_baseline"`` if it is negative,
+        ``"same_as_baseline"`` if it is zero, or
+        ``"feature_missing"`` if the feature is not present in the coefficient summary.
+    """
     matched = coef_summary.loc[coef_summary["feature"] == feature_name]
 
     if matched.empty:
@@ -146,7 +291,20 @@ def check_hypothetical_expectations(
     results: pd.DataFrame,
     coef_summary: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Check whether hypothetical predictions align with baseline expectations."""
+    """Check whether hypothetical profile predictions match coefficient-based expectations.
+
+    Args:
+        results: Dataframe of predicted profile survival probabilities and classes.
+        coef_summary: Coefficient summary dataframe from the trained logistic model.
+
+    Returns:
+        A dataframe listing each hypothetical profile, its associated feature,
+        the expected relation to baseline, the observed relation to baseline,
+        and whether the expectation was satisfied.
+
+    Raises:
+        IndexError: If the baseline profile is missing from the prediction results.
+    """
     baseline_probability = float(
         results.loc[
             results["profile"] == "baseline",
@@ -244,7 +402,15 @@ def check_hypothetical_expectations(
 
 
 def print_expectation_results(expectation_results: pd.DataFrame) -> None:
-    """Print whether hypothetical predictions match expectations."""
+    """Print hypothetical expectation-check results and whether all checked expectations passed.
+
+    Args:
+        expectation_results: Dataframe containing expected and observed profile
+            comparisons to baseline.
+
+    Returns:
+        None.
+    """
     print("\nHYPOTHETICAL EXPECTATION CHECKS\n")
     print(expectation_results.to_string(index=False))
 
@@ -257,7 +423,14 @@ def print_expectation_results(expectation_results: pd.DataFrame) -> None:
 
 
 def print_prediction_results(results: pd.DataFrame) -> None:
-    """Print predictions."""
+    """Print hypothetical profile prediction results sorted by survival probability.
+
+    Args:
+        results: Dataframe containing predicted profile probabilities and classes.
+
+    Returns:
+        None.
+    """
     ordered_results = results.sort_values(
         "predicted_survival_probability",
         ascending=False,
@@ -273,7 +446,16 @@ def print_prediction_results(results: pd.DataFrame) -> None:
 
 
 def print_top_coefficients(coef_summary: pd.DataFrame, top_n: int = 10) -> None:
-    """Print top positive and negative coefficients."""
+    """Print the top positive and top negative logistic model coefficients.
+
+    Args:
+        coef_summary: Coefficient summary dataframe containing feature names
+            and coefficients.
+        top_n: Number of top positive and negative coefficients to print.
+
+    Returns:
+        None.
+    """
     positive = coef_summary.sort_values("coefficient", ascending=False).head(top_n)
     negative = coef_summary.sort_values("coefficient", ascending=True).head(top_n)
 
@@ -289,7 +471,20 @@ def print_top_coefficients(coef_summary: pd.DataFrame, top_n: int = 10) -> None:
 
 
 def run_inspection(config: InspectConfig) -> None:
-    """Run full model inspection workflow."""
+    """Run the full logistic model inspection workflow.
+
+    Args:
+        config: Configuration specifying where inspection artifacts are stored.
+
+    Returns:
+        None.
+
+    Raises:
+        FileNotFoundError: If one or more required artifact files are missing.
+        ValueError: If baseline profile construction or prediction input validation fails.
+        pickle.UnpicklingError: If a saved pickle artifact cannot be loaded.
+        json.JSONDecodeError: If the metrics JSON file is invalid.
+    """
     pipeline, kept_columns, metrics, coef_summary, train_split = load_artifacts(config)
 
     print_model_metrics(metrics)
@@ -304,7 +499,14 @@ def run_inspection(config: InspectConfig) -> None:
 
 
 def parse_args() -> InspectConfig:
-    """Parse CLI arguments."""
+    """Parse command-line arguments and construct an InspectConfig instance.
+
+    Args:
+        None.
+
+    Returns:
+        An InspectConfig populated from command-line argument values.
+    """
     parser = argparse.ArgumentParser(
         description="Inspect saved logistic regression model artifacts."
     )

@@ -1,4 +1,82 @@
-"""Build GeoJSON business outputs for the Mapbox visualization pipeline."""
+"""Build GeoJSON business outputs for the Mapbox visualization pipeline.
+
+This module transforms the joined business-month panel and business license
+metadata into a GeoJSON FeatureCollection for Mapbox-based visualization.
+It validates required inputs, cleans business identifiers and license fields,
+filters license records to valid New York City boroughs and coordinates,
+aggregates business activity and complaint counts, attaches per-business
+license metadata, and writes serialized GeoJSON output for downstream app use.
+
+Inputs:
+- joined_dataset.csv
+- business license metadata CSV
+
+Processing steps:
+- Load joined business-month and license metadata datasets
+- Validate required columns in both inputs
+- Clean business IDs, address fields, dates, borough names, and coordinates
+- Filter license records to the five NYC boroughs and NYC coordinate bounds
+- Aggregate complaint activity and last observed month per business
+- Aggregate license metadata to one row per business
+- Merge business activity summaries with business license metadata
+- Build GeoJSON features and serialize them as a FeatureCollection
+
+Outputs:
+- GeoJSON FeatureCollection containing business point features and metadata
+
+Classes:
+- GeoBounds:
+  Stores latitude and longitude bounds used for NYC coordinate filtering.
+- GeoJSONConfig:
+  Stores file paths, cutoff date, and geographic bounds for GeoJSON generation.
+
+Functions:
+- load_joined_dataset:
+  Load the joined business-month dataset.
+- load_licenses_dataset:
+  Load the business license metadata dataset.
+- validate_joined_dataset:
+  Validate that the joined dataset contains required columns.
+- validate_licenses_dataset:
+  Validate that the license dataset contains required columns.
+- clean_joined_business_ids:
+  Normalize business IDs in the joined dataset.
+- clean_license_fields:
+  Normalize selected columns in the license dataset.
+- build_full_address:
+  Construct a full-address field from available address components.
+- filter_valid_boroughs:
+  Keep only license rows belonging to the five NYC boroughs.
+- filter_nyc_license_coordinates:
+  Keep only license rows whose coordinates fall within NYC bounds.
+- _resolve_complaint_series:
+  Select or derive the per-row complaint contribution series.
+- build_business_summary:
+  Aggregate business activity and complaints from the joined dataset.
+- _serialize_value:
+  Convert pandas values into JSON-friendly Python values.
+- _license_record_from_row:
+  Convert one license row into a serialized metadata record.
+- build_business_license_metadata:
+  Aggregate license metadata to one row per business.
+- merge_business_summary_with_license_metadata:
+  Merge business activity summaries with business license metadata.
+- build_feature:
+  Build one GeoJSON feature from one merged business row.
+- build_geojson_features:
+  Build GeoJSON features for all merged business rows.
+- build_geojson:
+  Wrap GeoJSON features in a FeatureCollection object.
+- prepare_geojson_inputs:
+  Validate and clean joined and license inputs for GeoJSON generation.
+- run_geojson_pipeline:
+  Run the complete GeoJSON generation workflow and write the output file.
+- parse_args:
+  Parse command-line arguments for GeoJSON generation.
+- main:
+  Execute the GeoJSON pipeline from the command line.
+"""
+
 
 from __future__ import annotations
 
@@ -65,7 +143,14 @@ COMPLAINT_TYPE_CANDIDATES = [
 
 @dataclass(frozen=True)
 class GeoBounds:
-    """Latitude and longitude bounds for NYC filtering."""
+    """Store latitude and longitude bounds used for NYC coordinate filtering.
+
+    Attributes:
+        lat_min: Minimum allowed latitude.
+        lat_max: Maximum allowed latitude.
+        lng_min: Minimum allowed longitude.
+        lng_max: Maximum allowed longitude.
+    """
 
     lat_min: float = 40.49
     lat_max: float = 40.92
@@ -75,7 +160,15 @@ class GeoBounds:
 
 @dataclass(frozen=True)
 class GeoJSONConfig:
-    """Configuration for the GeoJSON generation pipeline."""
+    """Store configuration values for the GeoJSON generation pipeline.
+
+    Attributes:
+        joined_data_path: Path to the joined business-month dataset CSV.
+        licenses_path: Path to the business license metadata CSV.
+        output_path: Path where the GeoJSON output file will be written.
+        cutoff_date: Date used to determine whether a business is active.
+        bounds: Geographic bounds used to filter NYC license coordinates.
+    """
 
     joined_data_path: Path
     licenses_path: Path
@@ -85,7 +178,20 @@ class GeoJSONConfig:
 
 
 def load_joined_dataset(path: Path) -> pd.DataFrame:
-    """Load the joined business-month dataset."""
+    """Load the joined business-month dataset from disk.
+
+    Args:
+        path: Path to the joined dataset CSV file.
+
+    Returns:
+        A dataframe containing the joined dataset, with ``month`` parsed as
+        datetime where possible and ``business_id`` coerced to string when present.
+
+    Raises:
+        FileNotFoundError: If the CSV file does not exist.
+        pd.errors.EmptyDataError: If the CSV file is empty.
+        OSError: If an I/O error occurs while reading the file.
+    """
     joined = pd.read_csv(path)
     if "month" in joined.columns:
         joined["month"] = pd.to_datetime(joined["month"], errors="coerce")
@@ -95,12 +201,35 @@ def load_joined_dataset(path: Path) -> pd.DataFrame:
 
 
 def load_licenses_dataset(path: Path) -> pd.DataFrame:
-    """Load the license metadata dataset."""
+    """Load the business license metadata dataset from disk.
+
+    Args:
+        path: Path to the license metadata CSV file.
+
+    Returns:
+        A dataframe containing the raw license metadata.
+
+    Raises:
+        FileNotFoundError: If the CSV file does not exist.
+        pd.errors.EmptyDataError: If the CSV file is empty.
+        OSError: If an I/O error occurs while reading the file.
+    """
     return pd.read_csv(path)
 
 
 def validate_joined_dataset(joined: pd.DataFrame) -> None:
-    """Validate that the joined dataset contains required columns."""
+    """Validate that the joined dataset contains required identifier and complaint columns.
+
+    Args:
+        joined: Joined business-month dataframe to validate.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If required identifier columns are missing.
+        ValueError: If no supported complaint signal column is present.
+    """
     required = {"business_id", "month"}
     missing = sorted(required - set(joined.columns))
 
@@ -119,14 +248,32 @@ def validate_joined_dataset(joined: pd.DataFrame) -> None:
 
 
 def validate_licenses_dataset(licenses: pd.DataFrame) -> None:
-    """Validate that the license dataset contains required columns."""
+    """Validate that the license dataset contains required metadata columns.
+
+    Args:
+        licenses: License metadata dataframe to validate.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If one or more required license columns are missing.
+    """
     missing = sorted(REQUIRED_LICENSE_COLUMNS - set(licenses.columns))
     if missing:
         raise ValueError(f"Missing required license columns: {missing}")
 
 
 def clean_joined_business_ids(joined: pd.DataFrame) -> pd.DataFrame:
-    """Normalize business IDs in the joined dataset."""
+    """Normalize and filter business IDs in the joined dataset.
+
+    Args:
+        joined: Joined business-month dataframe.
+
+    Returns:
+        A copy of the input dataframe with ``business_id`` coerced to stripped
+        strings and empty IDs removed.
+    """
     cleaned = joined.copy()
     cleaned["business_id"] = cleaned["business_id"].astype(str).str.strip()
     cleaned = cleaned[cleaned["business_id"] != ""].copy()
@@ -134,7 +281,15 @@ def clean_joined_business_ids(joined: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_license_fields(licenses: pd.DataFrame) -> pd.DataFrame:
-    """Normalize relevant fields in the license dataset."""
+    """Normalize selected fields in the license dataset for downstream processing.
+
+    Args:
+        licenses: Raw license metadata dataframe.
+
+    Returns:
+        A cleaned copy of the license dataframe with normalized business IDs,
+        borough names, coordinates, and date columns.
+    """
     cleaned = licenses.copy()
     cleaned["Business Unique ID"] = cleaned["Business Unique ID"].astype(str).str.strip()
 
@@ -152,7 +307,15 @@ def clean_license_fields(licenses: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_full_address(licenses: pd.DataFrame) -> pd.DataFrame:
-    """Construct a full address field from available address components."""
+    """Construct a full-address field from available address components.
+
+    Args:
+        licenses: License metadata dataframe.
+
+    Returns:
+        A copy of the license dataframe with a ``Full Address`` column added
+        or overwritten using available address parts.
+    """
     enriched = licenses.copy()
     address_parts = [
         "Address Building",
@@ -180,7 +343,15 @@ def build_full_address(licenses: pd.DataFrame) -> pd.DataFrame:
 
 
 def filter_valid_boroughs(licenses: pd.DataFrame) -> pd.DataFrame:
-    """Keep only licenses belonging to the five NYC boroughs."""
+    """Keep only license rows belonging to the five NYC boroughs.
+
+    Args:
+        licenses: License metadata dataframe.
+
+    Returns:
+        A filtered dataframe containing only rows whose borough is one of the
+        five valid NYC boroughs.
+    """
     return licenses[licenses["Borough"].isin(VALID_BOROUGHS)].copy()
 
 
@@ -191,7 +362,19 @@ def filter_nyc_license_coordinates(
     lng_min: float,
     lng_max: float,
 ) -> pd.DataFrame:
-    """Keep only license rows whose coordinates fall within NYC bounds."""
+    """Filter license rows to those whose coordinates fall within NYC bounds.
+
+    Args:
+        licenses: License metadata dataframe.
+        lat_min: Minimum allowed latitude.
+        lat_max: Maximum allowed latitude.
+        lng_min: Minimum allowed longitude.
+        lng_max: Maximum allowed longitude.
+
+    Returns:
+        A filtered dataframe containing only rows with coordinates inside
+        the specified bounding box.
+    """
     mask = (
         licenses["Latitude"].between(lat_min, lat_max)
         & licenses["Longitude"].between(lng_min, lng_max)
@@ -200,7 +383,16 @@ def filter_nyc_license_coordinates(
 
 
 def _resolve_complaint_series(joined: pd.DataFrame) -> pd.Series:
-    """Return a per-row complaint contribution series from available columns."""
+    """Return a per-row complaint contribution series from available complaint columns.
+
+    Args:
+        joined: Joined business-month dataframe containing complaint-related columns.
+
+    Returns:
+        A numeric series representing each row's complaint contribution, derived
+        from the first available supported complaint-count column or complaint-type
+        indicator column, or a zero series if none are available.
+    """
     for column in COMPLAINT_COUNT_CANDIDATES:
         if column in joined.columns:
             return pd.to_numeric(joined[column], errors="coerce").fillna(0)
@@ -216,7 +408,16 @@ def build_business_summary(
     joined: pd.DataFrame,
     cutoff_date: pd.Timestamp,
 ) -> pd.DataFrame:
-    """Aggregate business activity from the joined business-month dataset."""
+    """Aggregate business activity and complaint counts from the joined dataset.
+
+    Args:
+        joined: Cleaned joined business-month dataframe.
+        cutoff_date: Date used to determine whether a business is active.
+
+    Returns:
+        A dataframe with one row per business containing last observed month,
+        total complaint count, and an active-status indicator.
+    """
     working = joined.copy()
     working["complaint_value"] = _resolve_complaint_series(working)
 
@@ -233,7 +434,15 @@ def build_business_summary(
 
 
 def _serialize_value(value: Any) -> Any:
-    """Convert pandas values into JSON-friendly Python values."""
+    """Convert pandas values into JSON-serializable Python values.
+
+    Args:
+        value: Value to serialize.
+
+    Returns:
+        ``None`` for missing values, a formatted date string for timestamps,
+        or the original value for other JSON-friendly objects.
+    """
     if pd.isna(value):
         return None
     if isinstance(value, pd.Timestamp):
@@ -242,7 +451,15 @@ def _serialize_value(value: Any) -> Any:
 
 
 def _license_record_from_row(row: pd.Series) -> dict[str, Any]:
-    """Convert a license row into a serialized record for GeoJSON properties."""
+    """Convert one license row into a serialized metadata record.
+
+    Args:
+        row: A license-metadata row.
+
+    Returns:
+        A dictionary containing serialized license fields mapped to their
+        GeoJSON property names.
+    """
     record: dict[str, Any] = {}
     for source_column, target_column in LICENSE_RENAME_MAP.items():
         if source_column in row.index:
@@ -251,7 +468,15 @@ def _license_record_from_row(row: pd.Series) -> dict[str, Any]:
 
 
 def build_business_license_metadata(licenses: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate license metadata to one row per business."""
+    """Aggregate license metadata to one row per business.
+
+    Args:
+        licenses: Cleaned and filtered license metadata dataframe.
+
+    Returns:
+        A dataframe with one row per business containing coordinates, license count,
+        and serialized per-license records.
+    """
     grouped_rows: list[dict[str, Any]] = []
 
     for business_id, group in licenses.groupby("Business Unique ID", sort=True):
@@ -280,13 +505,30 @@ def merge_business_summary_with_license_metadata(
     summary: pd.DataFrame,
     metadata: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Merge business activity summaries with coordinate/license metadata."""
+    """Merge business activity summaries with per-business license metadata.
+
+    Args:
+        summary: Business-level activity summary dataframe.
+        metadata: Business-level license metadata dataframe.
+
+    Returns:
+        A merged dataframe sorted by ``business_id`` containing only businesses
+        present in both inputs.
+    """
     merged = summary.merge(metadata, on="business_id", how="inner")
     return merged.sort_values("business_id").reset_index(drop=True)
 
 
 def build_feature(row: pd.Series) -> dict[str, Any] | None:
-    """Build a single GeoJSON feature from one business row."""
+    """Build a single GeoJSON feature from one merged business row.
+
+    Args:
+        row: A merged business-level row containing coordinates and properties.
+
+    Returns:
+        A GeoJSON feature dictionary for the business, or ``None`` if latitude
+        or longitude is missing.
+    """
     latitude = row.get("latitude")
     longitude = row.get("longitude")
 
@@ -318,7 +560,14 @@ def build_feature(row: pd.Series) -> dict[str, Any] | None:
 
 
 def build_geojson_features(businesses: pd.DataFrame) -> list[dict[str, Any]]:
-    """Build GeoJSON features for all business rows."""
+    """Build GeoJSON features for all merged business rows.
+
+    Args:
+        businesses: Merged business-level dataframe.
+
+    Returns:
+        A list of GeoJSON feature dictionaries for rows with valid coordinates.
+    """
     features: list[dict[str, Any]] = []
 
     for _, row in businesses.iterrows():
@@ -330,7 +579,14 @@ def build_geojson_features(businesses: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def build_geojson(features: list[dict[str, Any]]) -> dict[str, Any]:
-    """Wrap a feature list in a GeoJSON FeatureCollection."""
+    """Wrap a list of features in a GeoJSON FeatureCollection.
+
+    Args:
+        features: GeoJSON feature dictionaries to include.
+
+    Returns:
+        A GeoJSON FeatureCollection dictionary containing the supplied features.
+    """
     return {
         "type": "FeatureCollection",
         "features": features,
@@ -342,7 +598,20 @@ def prepare_geojson_inputs(
     licenses: pd.DataFrame,
     bounds: GeoBounds,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Validate and clean joined and license inputs for GeoJSON generation."""
+    """Validate and clean joined and license inputs for GeoJSON generation.
+
+    Args:
+        joined: Raw joined business-month dataframe.
+        licenses: Raw license metadata dataframe.
+        bounds: Geographic bounds used for NYC coordinate filtering.
+
+    Returns:
+        A tuple containing the cleaned joined dataframe and cleaned, filtered
+        license dataframe.
+
+    Raises:
+        ValueError: If required columns are missing from either input dataset.
+    """
     validate_joined_dataset(joined)
     validate_licenses_dataset(licenses)
 
@@ -361,7 +630,20 @@ def prepare_geojson_inputs(
 
 
 def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
-    """Run the full GeoJSON generation pipeline and write the output file."""
+    """Run the full GeoJSON generation workflow and write the output file.
+
+    Args:
+        config: Configuration specifying input paths, output path, cutoff date,
+            and geographic bounds.
+
+    Returns:
+        The path to the written GeoJSON output file.
+
+    Raises:
+        FileNotFoundError: If one or more required input files are missing.
+        ValueError: If required columns are missing from the input datasets.
+        OSError: If an I/O error occurs while writing the output file.
+    """
     joined = load_joined_dataset(config.joined_data_path)
     licenses = load_licenses_dataset(config.licenses_path)
 
@@ -385,7 +667,14 @@ def run_geojson_pipeline(config: GeoJSONConfig) -> Path:
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse CLI arguments for GeoJSON generation."""
+    """Parse command-line arguments for GeoJSON generation.
+
+    Args:
+        None.
+
+    Returns:
+        An argparse namespace containing parsed command-line argument values.
+    """
     parser = argparse.ArgumentParser(
         description="Build GeoJSON business outputs for the Mapbox app.",
     )

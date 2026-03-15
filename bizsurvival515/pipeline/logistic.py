@@ -1,21 +1,54 @@
 """Train a logistic regression model for 3-year business survival.
 
-Input:
-- joined_dataset.csv
+Classes:
+- LogisticModelSettings:
+  Stores tunable modeling settings such as study window, aggregation horizon,
+  survival horizon, variance threshold, split size, and random seed.
+- LogisticConfig: Stores the input path, output path, and modeling settings for the pipeline.
+- DatasetSplit: Stores train/test feature and target partitions.
+- PreparedTrainingData:
+  Stores prepared datasets, balanced data, split outputs, and feature-selection
+  results used during modeling.
 
-Processing steps:
-- Load and validate the joined business-month panel
-- Build a business-level dataset using aggregated first-year features
-- Remove leakage and near-constant predictors
-- Balance the training data and fit logistic regression
-- Save model artifacts and evaluation outputs
-
-Outputs:
-- Saved logistic regression pipeline
-- Saved retained and dropped feature columns
-- Saved coefficient summary CSV
-- Saved balanced dataset and train/test splits
-- Saved evaluation metrics JSON
+Functions:
+- build_business_survival_summary:
+  Build a business-level summary with survival duration and binary target.
+- filter_eligible_businesses:
+  Keep businesses with enough observed months and enough follow-up horizon.
+- get_first_year_window: Return the first observed monthly rows per business.
+- is_binary_series:
+  Check whether a series contains only binary non-null values.
+- choose_aggregation: Choose the aggregation rule for a feature column.
+- aggregate_first_year_features:
+  Aggregate first-year business-month rows into one row per business.
+- build_training_dataset:
+  Build the business-level modeling dataset with aggregated features and target.
+- get_excluded_feature_columns: Return columns excluded from the logistic feature matrix.
+- split_features_and_target: Split the training dataset into predictors and target.
+- select_nonconstant_features:
+  Remove low-variance predictors using variance thresholding.
+- balance_dataset:
+  Oversample the minority class to create a balanced modeling dataset.
+- train_test_split_balanced:
+  Split the balanced dataset into train and test partitions.
+- prepare_training_data:
+  Run the end-to-end data preparation workflow for logistic modeling.
+- build_logistic_pipeline:
+  Build the sklearn pipeline used for logistic regression.
+- fit_logistic_model:
+  Fit the logistic regression pipeline on training data.
+- evaluate_model:
+  Evaluate the fitted model on the test split.
+- build_coefficient_summary:
+  Create a sorted coefficient summary for export and inspection.
+- save_model_artifacts:
+  Save fitted model artifacts, datasets, and evaluation outputs.
+- run_logistic_pipeline:
+  Run the complete logistic training, evaluation, and artifact-saving workflow.
+- parse_args:
+  Parse command-line arguments into a LogisticConfig instance.
+- main:
+  Execute the logistic modeling pipeline from the command line and print results.
 """
 
 from __future__ import annotations
@@ -65,7 +98,17 @@ MAX_ITER = 5000
 
 @dataclass(frozen=True)
 class LogisticModelSettings:
-    """Tunable settings for logistic survival modeling."""
+    """Store tunable settings for logistic survival modeling.
+    Attributes:
+        study_end: Final month included in the study window.
+        survival_months: Survival horizon, in months, used to define the target.
+        aggregation_months: Number of first observed months aggregated into
+            business-level features.
+        variance_threshold: Minimum variance required for a feature to be kept.
+        test_size: Fraction of the balanced dataset assigned to the test split.
+        random_state: Random seed used for balancing and splitting.
+        max_iter: Maximum number of optimizer iterations for logistic regression.
+    """
 
     study_end: pd.Timestamp = STUDY_END
     survival_months: int = SURVIVAL_MONTHS
@@ -78,7 +121,12 @@ class LogisticModelSettings:
 
 @dataclass(frozen=True)
 class LogisticConfig:
-    """Configuration for logistic survival modeling pipeline."""
+    """Store configuration values for the logistic survival modeling pipeline.
+    Attributes:
+        data_path: Path to the preprocessed joined monthly panel CSV.
+        output_dir: Directory where model artifacts and evaluation outputs are saved.
+        settings: Tunable settings controlling preprocessing, training, and evaluation.
+    """
 
     data_path: Path
     output_dir: Path
@@ -87,7 +135,13 @@ class LogisticConfig:
 
 @dataclass(frozen=True)
 class DatasetSplit:
-    """Container for train/test feature and target splits."""
+    """Store train/test feature and target partitions for logistic modeling.
+    Attributes:
+        features_train: Training feature matrix.
+        features_test: Test feature matrix.
+        target_train: Training target vector.
+        target_test: Test target vector.
+    """
 
     features_train: pd.DataFrame
     features_test: pd.DataFrame
@@ -97,7 +151,15 @@ class DatasetSplit:
 
 @dataclass(frozen=True)
 class PreparedTrainingData:
-    """Container for prepared datasets used in modeling."""
+    """Store prepared datasets and preprocessing results used for logistic modeling.
+    Attributes:
+        training_df: Business-level modeling dataset before feature/target split.
+        feature_df: Feature matrix after excluded-column removal and variance filtering.
+        target: Binary survival target vector.
+        balanced_df: Balanced dataset produced by oversampling the minority class.
+        split: Train/test feature and target partitions.
+        feature_selection: Result describing which features were kept or dropped.
+    """
 
     training_df: pd.DataFrame
     feature_df: pd.DataFrame
@@ -107,7 +169,14 @@ class PreparedTrainingData:
     feature_selection: FeatureSelectionResult
 
     def __getattr__(self, name: str) -> object:
-        """Provide backward-compatible attribute aliases."""
+        """Provide backward-compatible aliases for legacy prepared-data attributes.
+        Args:
+            name: Attribute name being requested.
+        Returns:
+            The corresponding modern attribute value for supported legacy aliases.
+        Raises:
+            AttributeError: If the requested attribute name is not a supported alias.
+        """
         legacy_mapping = {
             "X": self.feature_df,
             "y": self.target,
@@ -127,7 +196,14 @@ def build_business_survival_summary(
     df: pd.DataFrame,
     survival_months: int,
 ) -> pd.DataFrame:
-    """Build business-level survival summary and survival target."""
+    """Build a business-level survival summary with duration and binary target.
+    Args:
+        df: Joined monthly business panel containing ``business_id`` and ``month``.
+        survival_months: Survival horizon, in months, used to define the target.
+    Returns:
+        A dataframe with one row per business containing first month, last month,
+        duration in months, and a binary survival target.
+    """
     first_month = df.groupby("business_id")["month"].min()
     last_month = df.groupby("business_id")["month"].max()
 
@@ -158,12 +234,14 @@ def filter_eligible_businesses(
     survival_months: int,
     aggregation_months: int,
 ) -> pd.DataFrame:
-    """Keep businesses with a full first-year window and enough horizon.
-
-    This creates a first-year-profile modeling cohort:
-    - business must have entered early enough to evaluate 36-month survival
-    - business must have at least `aggregation_months` observed months available
-      so first-year aggregation is well-defined
+    """Filter to businesses with enough observed history and enough survival horizon.
+    Args:
+        business_survival: Business-level survival summary dataframe.
+        study_end: Final month included in the study window.
+        survival_months: Survival horizon, in months, used to define the target.
+        aggregation_months: Number of first observed months required for feature aggregation.
+    Returns:
+        A filtered dataframe containing only businesses eligible for modeling.
     """
     survival_cutoff = study_end - pd.DateOffset(months=survival_months)
     min_last_month_needed = (
@@ -182,7 +260,14 @@ def get_first_year_window(
     df: pd.DataFrame,
     aggregation_months: int,
 ) -> pd.DataFrame:
-    """Return the first N observed monthly rows per business."""
+    """Return the first observed monthly rows per business up to the aggregation window.
+    Args:
+        df: Joined monthly business panel.
+        aggregation_months: Number of earliest observed monthly rows to retain per business.
+    Returns:
+        A dataframe containing only the first observed rows per business within
+        the requested aggregation window.
+    """
     panel = df.sort_values(["business_id", "month"]).copy()
     panel["row_num_within_business"] = panel.groupby("business_id").cumcount()
     first_year = panel.loc[
@@ -192,7 +277,12 @@ def get_first_year_window(
 
 
 def is_binary_series(series: pd.Series) -> bool:
-    """Return True when non-null values are all binary 0/1."""
+    """Return whether a series contains only binary non-null values.
+    Args:
+        series: Series to inspect.
+    Returns:
+        True if all non-null values are in ``{0, 1}``, otherwise False.
+    """
     non_null = series.dropna()
     if non_null.empty:
         return False
@@ -201,7 +291,17 @@ def is_binary_series(series: pd.Series) -> bool:
 
 
 def choose_aggregation(column_name: str, series: pd.Series) -> str:
-    """Choose aggregation rule for a feature column."""
+    """Choose the aggregation rule to use for a feature column.
+    Args:
+        column_name: Name of the feature column being aggregated.
+        series: Column values from the first-year business window.
+    Returns:
+        The aggregation rule name to apply, such as ``first``, ``last``,
+        ``max``, ``mean``, or ``sum``.
+    Raises:
+        ValueError: If aggregation is requested for an identifier column that
+            should not be aggregated.
+    """
     static_first_columns = {
         "business_latitude",
         "business_longitude",
@@ -246,7 +346,14 @@ def aggregate_first_year_features(
     df: pd.DataFrame,
     aggregation_months: int,
 ) -> pd.DataFrame:
-    """Aggregate the first N observed months into one row per business."""
+    """Aggregate first-year business-month rows into one feature row per business.
+    Args:
+        df: Joined monthly business panel.
+        aggregation_months: Number of earliest observed monthly rows to aggregate.
+    Returns:
+        A business-level dataframe with aggregated first-year features and a
+        count of observed months in the aggregation window.
+    """
     first_year = get_first_year_window(df, aggregation_months=aggregation_months)
 
     feature_columns = [
@@ -293,7 +400,16 @@ def build_training_dataset(
     survival_months: int,
     aggregation_months: int,
 ) -> pd.DataFrame:
-    """Build business-level training dataset with first-year features and target."""
+    """Build the business-level logistic modeling dataset with target labels.
+    Args:
+        df: Joined monthly business panel restricted to the study window.
+        study_end: Final month included in the study window.
+        survival_months: Survival horizon, in months, used to define the target.
+        aggregation_months: Number of earliest observed months aggregated into features.
+    Returns:
+        A business-level dataframe containing aggregated first-year features,
+        survival duration fields, and the binary survival target.
+    """
     business_survival = build_business_survival_summary(df, survival_months)
     eligible = filter_eligible_businesses(
         business_survival=business_survival,
@@ -326,7 +442,11 @@ def build_training_dataset(
 
 
 def get_excluded_feature_columns() -> list[str]:
-    """Return columns excluded from logistic feature matrix."""
+    """Return columns excluded from the logistic feature matrix.
+    Returns:
+        A list of identifier, leakage, and excluded engineered columns that
+        should not be used as logistic model predictors.
+    """
     return [
         "business_id",
         "first_month",
@@ -345,7 +465,12 @@ def get_excluded_feature_columns() -> list[str]:
 def split_features_and_target(
     training_df: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.Series]:
-    """Split business-level dataset into predictors and target."""
+    """Split the business-level training dataset into predictors and target.
+    Args:
+        training_df: Business-level modeling dataset containing features and target.
+    Returns:
+        A tuple containing the feature dataframe and the binary target series.
+    """
     excluded_columns = get_excluded_feature_columns()
     feature_columns = [
         column for column in training_df.columns if column not in excluded_columns
@@ -359,7 +484,18 @@ def select_nonconstant_features(
     feature_df: pd.DataFrame,
     variance_threshold: float,
 ) -> tuple[pd.DataFrame, FeatureSelectionResult]:
-    """Remove near-constant features using variance thresholding."""
+    """Remove low-variance predictors using variance thresholding.
+    Args:
+        feature_df: Candidate feature matrix before variance filtering.
+        variance_threshold: Minimum variance required for a feature to be kept.
+    Returns:
+        A tuple containing:
+        - The reduced feature dataframe after low-variance filtering.
+        - A FeatureSelectionResult describing kept and dropped columns.
+    Raises:
+        ValueError: If the feature matrix is empty before filtering.
+        ValueError: If no features remain after low-variance filtering.
+    """
     if feature_df.empty:
         raise ValueError("Feature matrix is empty before variance filtering.")
 
@@ -391,7 +527,16 @@ def balance_dataset(
     target: pd.Series,
     random_state: int,
 ) -> pd.DataFrame:
-    """Oversample minority class to match majority class size."""
+    """Oversample the minority class to match the majority class size.
+    Args:
+        feature_df: Feature matrix to balance.
+        target: Binary survival target corresponding to the feature matrix.
+        random_state: Random seed used for reproducible resampling and shuffling.
+    Returns:
+        A balanced dataframe containing features and the ``survived_36m`` target.
+    Raises:
+        ValueError: If the target does not contain both classes.
+    """
     full_df = feature_df.copy()
     full_df["survived_36m"] = target.values
 
@@ -426,7 +571,15 @@ def train_test_split_balanced(
     test_size: float,
     random_state: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    """Split balanced dataset into train and test partitions."""
+    """Split the balanced dataset into train and test feature/target partitions.
+    Args:
+        balanced_df: Balanced dataframe containing features and ``survived_36m``.
+        test_size: Fraction of rows assigned to the test split.
+        random_state: Random seed used for reproducible splitting.
+    Returns:
+        A tuple containing training features, test features, training target,
+        and test target.
+    """
     balanced_features = balanced_df.drop(columns=["survived_36m"])
     balanced_target = balanced_df["survived_36m"]
 
@@ -441,7 +594,17 @@ def train_test_split_balanced(
 
 
 def prepare_training_data(config: LogisticConfig) -> PreparedTrainingData:
-    """Prepare business-level training data for logistic regression."""
+    """Prepare all datasets needed for logistic regression training and evaluation.
+    Args:
+        config: Configuration controlling input loading, preprocessing, balancing,
+            and splitting.
+    Returns:
+        A PreparedTrainingData object containing the business-level modeling data,
+        balanced dataset, split outputs, and feature-selection results.
+    Raises:
+        ValueError: If dataset validation fails, no usable features remain,
+            or the target cannot be balanced for training.
+    """
     joined = load_joined_dataset(config.data_path)
     validate_joined_dataset(joined)
     df = restrict_to_study_window(joined, config.settings.study_end)
@@ -491,7 +654,13 @@ def prepare_training_data(config: LogisticConfig) -> PreparedTrainingData:
 
 
 def build_logistic_pipeline(max_iter: int, random_state: int) -> Pipeline:
-    """Build sklearn pipeline for logistic regression modeling."""
+    """Build the sklearn pipeline used for logistic regression modeling.
+    Args:
+        max_iter: Maximum number of optimizer iterations for logistic regression.
+        random_state: Random seed passed to the logistic regression estimator.
+    Returns:
+        A sklearn Pipeline containing imputation, scaling, and logistic regression.
+    """
     pipeline = Pipeline(
         [
             ("imputer", SimpleImputer(strategy="constant", fill_value=0)),
@@ -517,7 +686,19 @@ def fit_logistic_model(
     random_state: int = RANDOM_STATE,
     **legacy_kwargs: object,
 ) -> Pipeline:
-    """Fit logistic regression pipeline."""
+    """Fit the logistic regression pipeline on training data.
+    Args:
+        features_train: Training feature matrix.
+        target_train: Training target vector.
+        max_iter: Maximum number of optimizer iterations for logistic regression.
+        random_state: Random seed passed to the logistic regression estimator.
+        **legacy_kwargs: Optional legacy keyword aliases such as ``X_train`` and ``y_train``.
+    Returns:
+        A fitted sklearn Pipeline containing the trained logistic model.
+    Raises:
+        TypeError: If unexpected legacy keyword arguments are provided.
+        ValueError: If training features or target are missing.
+    """
     if features_train is None:
         features_train = legacy_kwargs.pop("X_train", None)
     if target_train is None:
@@ -544,7 +725,19 @@ def evaluate_model(
     target_test: pd.Series | None = None,
     **legacy_kwargs: object,
 ) -> dict[str, object]:
-    """Evaluate logistic regression model on the test split."""
+    """Evaluate the fitted logistic model on the test split.
+    Args:
+        pipeline: Fitted logistic regression pipeline to evaluate.
+        features_test: Test feature matrix.
+        target_test: Test target vector.
+        **legacy_kwargs: Optional legacy keyword aliases such as ``X_test`` and ``y_test``.
+    Returns:
+        A dictionary containing classification metrics, probability summaries,
+        and Mann–Whitney U test results.
+    Raises:
+        TypeError: If unexpected legacy keyword arguments are provided.
+        ValueError: If test features or target are missing.
+    """
     if features_test is None:
         features_test = legacy_kwargs.pop("X_test", None)
     if target_test is None:
@@ -596,7 +789,14 @@ def build_coefficient_summary(
     pipeline: Pipeline,
     feature_columns: list[str],
 ) -> pd.DataFrame:
-    """Build sorted coefficient summary from fitted logistic model."""
+    """Build a coefficient summary dataframe from the fitted logistic model.
+    Args:
+        pipeline: Fitted logistic regression pipeline.
+        feature_columns: Feature-column names aligned to the fitted model coefficients.
+    Returns:
+        A dataframe containing feature names, coefficients, and absolute
+        coefficient values sorted in descending order.
+    """
     coefficients = pipeline.named_steps["model"].coef_[0]
     coef_df = pd.DataFrame(
         {
@@ -618,7 +818,15 @@ def save_model_artifacts(
     metrics: dict[str, object],
     output_dir: Path,
 ) -> dict[str, Path]:
-    """Save fitted model artifacts and evaluation outputs."""
+    """Save fitted logistic model artifacts, datasets, and evaluation outputs.
+    Args:
+        prepared_data: Prepared datasets and feature-selection results.
+        pipeline: Fitted logistic regression pipeline.
+        metrics: Evaluation metrics computed on the test split.
+        output_dir: Directory where artifacts should be saved.
+    Returns:
+        A dictionary mapping artifact names to saved file paths.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
 
     coefficient_summary = build_coefficient_summary(
@@ -670,7 +878,16 @@ def save_model_artifacts(
 
 
 def run_logistic_pipeline(config: LogisticConfig) -> dict[str, object]:
-    """Run full logistic regression training and artifact-saving pipeline."""
+    """Run the complete logistic training, evaluation, and artifact-saving workflow.
+    Args:
+        config: Configuration controlling data loading, preprocessing, model fitting,
+            evaluation, and artifact saving.
+    Returns:
+        A dictionary containing dataset shapes, class distributions, evaluation
+        metrics, feature-selection counts, and saved artifact paths.
+    Raises:
+        ValueError: If preprocessing, balancing, or model preparation fails.
+    """
     prepared_data = prepare_training_data(config)
     pipeline = fit_logistic_model(
         features_train=prepared_data.split.features_train,
@@ -709,7 +926,12 @@ def run_logistic_pipeline(config: LogisticConfig) -> dict[str, object]:
 
 
 def parse_args() -> LogisticConfig:
-    """Parse CLI arguments into a LogisticConfig."""
+    """Parse command-line arguments and construct a LogisticConfig instance.
+    Args:
+        None.
+    Returns:
+        A LogisticConfig populated from command-line argument values.
+    """
     parser = argparse.ArgumentParser(
         description="Train logistic regression model for 3-year business survival."
     )

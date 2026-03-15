@@ -1,21 +1,51 @@
-"""
-Utilities for constructing model input feature vectors used by the
-business survival prediction models.
+"""Build logistic-model input profiles for business survival prediction.
 
-This module provides helper functions to build single-row feature
-profiles for hypothetical businesses based on user inputs. These
-profiles match the feature schema used during model training so that
-they can be safely passed into trained prediction pipelines.
+Inputs:
+- Kept logistic model feature-column lists
+- Reference dataframes used for median defaults and cluster lookup
+- User-provided profile inputs for category, complaint, license-count, and
+  location settings
 
-Supported functionality includes:
-- Generating zero-initialized feature profiles
-- Building logistic regression feature vectors for 3-year survival prediction
-- Mapping display names to encoded feature columns
-- Assigning nearest geographic cluster centroids
+Processing steps:
+- Identify retained category and complaint feature columns
+- Convert raw feature-column names into display-friendly labels
+- Build zero-valued profiles aligned to retained feature columns
+- Derive baseline location and cluster defaults from reference data
+- Assign nearest geographic cluster information for input coordinates
+- Fill numeric, category, and complaint values into logistic model profiles
 
-These utilities are primarily used by the Streamlit simulation pages
-to convert user inputs (categories, complaint counts, location, etc.)
-into model-ready feature matrices.
+Outputs:
+- Baseline logistic profile dataframes
+- User-specified logistic profile dataframes
+- Display-label mappings for retained category and complaint features
+
+Classes:
+- BusinessProfileInputs:
+  Stores user-provided inputs for constructing a hypothetical business profile.
+
+Functions:
+- prettify_feature_name:
+  Convert a raw feature-column name into a display-friendly label.
+- category_feature_columns:
+  Return retained business-category feature columns.
+- complaint_feature_columns:
+  Return retained complaint feature columns.
+- category_display_to_column_map:
+  Map display labels to raw business-category feature columns.
+- complaint_display_to_column_map:
+  Map display labels to raw complaint feature columns.
+- build_zero_profile:
+  Build a zero-valued profile aligned to retained feature columns.
+- assign_nearest_cluster_centroid:
+  Return the nearest cluster-centroid coordinates for a given location.
+- _rename_logistic_cluster_columns:
+  Rename logistic-specific cluster columns to shared cluster field names.
+- baseline_new_business_profile:
+  Build a baseline logistic profile using reference medians and one active license.
+- _populate_profile:
+  Fill numeric, category, and complaint values into a single-row profile.
+- build_logistic_profile:
+  Build a user-specified single-row profile for the logistic regression model.
 """
 
 from __future__ import annotations
@@ -40,7 +70,15 @@ LOGISTIC_LICENSE_COL = "active_license_count_first12m_mean"
 
 @dataclass
 class BusinessProfileInputs:
-    """User-provided inputs for constructing a hypothetical business profile."""
+    """Store user-provided inputs for constructing a hypothetical business profile.
+
+    Attributes:
+        selected_category_columns: Category feature columns set to active.
+        active_license_count: Active license count for the business profile.
+        business_latitude: Business latitude used for location-based features.
+        business_longitude: Business longitude used for location-based features.
+        complaint_counts: Mapping from complaint feature columns to complaint counts.
+    """
 
     selected_category_columns: list[str]
     active_license_count: int
@@ -50,7 +88,15 @@ class BusinessProfileInputs:
 
 
 def prettify_feature_name(column_name: str) -> str:
-    """Convert a raw feature column name into a user-friendly display label."""
+    """Convert a raw feature column name into a display-friendly label.
+
+    Args:
+        column_name: Raw encoded feature column name.
+
+    Returns:
+        A human-readable label with training-specific suffixes and standard
+        prefixes removed where applicable.
+    """
     suffixes = [
         "_first12m_max",
         "_first12m_mean",
@@ -74,7 +120,15 @@ def prettify_feature_name(column_name: str) -> str:
 
 
 def category_feature_columns(kept_columns: list[str]) -> list[str]:
-    """Return kept business-category indicator columns."""
+    """Return retained business-category indicator columns for the logistic model.
+
+    Args:
+        kept_columns: Feature columns retained by the logistic model.
+
+    Returns:
+        A sorted list of business-category feature columns ending in
+        ``_first12m_max``.
+    """
     return sorted(
         [
             column
@@ -86,7 +140,15 @@ def category_feature_columns(kept_columns: list[str]) -> list[str]:
 
 
 def complaint_feature_columns(kept_columns: list[str]) -> list[str]:
-    """Return kept complaint-count feature columns."""
+    """Return retained complaint-count feature columns for the logistic model.
+
+    Args:
+        kept_columns: Feature columns retained by the logistic model.
+
+    Returns:
+        A sorted list of complaint-type feature columns ending in
+        ``_first12m_sum``.
+    """
     return sorted(
         [
             column
@@ -98,19 +160,40 @@ def complaint_feature_columns(kept_columns: list[str]) -> list[str]:
 
 
 def category_display_to_column_map(kept_columns: list[str]) -> dict[str, str]:
-    """Map pretty category labels to raw category feature column names."""
+    """Map display labels to raw business-category feature columns.
+
+    Args:
+        kept_columns: Feature columns retained by the logistic model.
+
+    Returns:
+        A dictionary mapping human-readable category labels to raw feature columns.
+    """
     category_cols = category_feature_columns(kept_columns)
     return {prettify_feature_name(col): col for col in category_cols}
 
 
 def complaint_display_to_column_map(kept_columns: list[str]) -> dict[str, str]:
-    """Map pretty complaint labels to raw complaint feature column names."""
+    """Map display labels to raw complaint feature columns.
+
+    Args:
+        kept_columns: Feature columns retained by the logistic model.
+
+    Returns:
+        A dictionary mapping human-readable complaint labels to raw feature columns.
+    """
     complaint_cols = complaint_feature_columns(kept_columns)
     return {prettify_feature_name(col): col for col in complaint_cols}
 
 
 def build_zero_profile(kept_columns: list[str]) -> pd.DataFrame:
-    """Create a single-row profile initialized to zeros."""
+    """Build a zero-valued profile aligned to the retained logistic feature columns.
+
+    Args:
+        kept_columns: Feature columns retained by the logistic model.
+
+    Returns:
+        A one-row dataframe initialized to zero for all retained feature columns.
+    """
     return pd.DataFrame(0.0, index=[0], columns=kept_columns)
 
 
@@ -119,7 +202,16 @@ def assign_nearest_cluster_centroid(
     longitude: float,
     reference_df: pd.DataFrame,
 ) -> tuple[float, float]:
-    """Return only the nearest cluster centroid latitude and longitude."""
+    """Return the nearest cluster-centroid latitude and longitude for a location.
+
+    Args:
+        latitude: Input latitude for nearest-cluster lookup.
+        longitude: Input longitude for nearest-cluster lookup.
+        reference_df: Reference dataframe containing cluster-center information.
+
+    Returns:
+        A tuple containing the nearest cluster-centroid latitude and longitude.
+    """
     cluster_df = build_cluster_reference_df(
         reference_df=reference_df,
         lat_column="location_cluster_lat",
@@ -135,7 +227,15 @@ def assign_nearest_cluster_centroid(
 
 
 def _rename_logistic_cluster_columns(reference_df: pd.DataFrame) -> pd.DataFrame:
-    """Rename logistic-specific cluster columns to shared cluster field names."""
+    """Rename logistic-specific cluster columns to shared cluster field names.
+
+    Args:
+        reference_df: Reference dataframe containing logistic-specific cluster columns.
+
+    Returns:
+        A copy of the reference dataframe with available logistic cluster columns
+        renamed to the shared cluster-field names expected by cluster utilities.
+    """
     rename_map = {
         LOGISTIC_CLUSTER_COL: "location_cluster",
         LOGISTIC_CLUSTER_LAT_COL: "location_cluster_lat",
@@ -153,7 +253,15 @@ def baseline_new_business_profile(
     kept_columns: list[str],
     reference_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Build a default logistic profile using median location and one active license."""
+    """Build a baseline logistic profile using median location and one active license.
+
+    Args:
+        kept_columns: Feature columns retained by the logistic model.
+        reference_df: Reference dataframe used for median location and cluster defaults.
+
+    Returns:
+        A one-row baseline profile dataframe for logistic model prediction.
+    """
     profile = build_zero_profile(kept_columns)
 
     median_lat = (
@@ -201,7 +309,17 @@ def _populate_profile(
     selected_category_columns: list[str],
     complaint_counts: dict[str, float],
 ) -> pd.DataFrame:
-    """Fill numeric, category, and complaint values into a single-row profile."""
+    """Fill numeric, category, and complaint values into a single-row profile.
+
+    Args:
+        profile: One-row profile dataframe to update.
+        numeric_inputs: Mapping from numeric feature columns to values.
+        selected_category_columns: Category feature columns to activate.
+        complaint_counts: Mapping from complaint feature columns to counts.
+
+    Returns:
+        The updated one-row profile dataframe.
+    """
     for column, value in numeric_inputs.items():
         if column in profile.columns:
             profile.loc[0, column] = float(value)
@@ -222,7 +340,17 @@ def build_logistic_profile(
     reference_df: pd.DataFrame,
     inputs: BusinessProfileInputs,
 ) -> pd.DataFrame:
-    """Build a single-row profile for the logistic regression model."""
+    """Build a single-row profile for the logistic regression model.
+
+    Args:
+        kept_columns: Feature columns retained by the logistic model.
+        reference_df: Reference dataframe used for nearest-cluster assignment.
+        inputs: User-provided business profile inputs.
+
+    Returns:
+        A one-row dataframe aligned to the retained logistic feature columns,
+        ready for model prediction.
+    """
     profile = build_zero_profile(kept_columns)
 
     cluster_ref_df = build_cluster_reference_df(
