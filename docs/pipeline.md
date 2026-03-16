@@ -126,6 +126,8 @@ The output is a monthly business panel in which each row represents a **business
 
 # Logistic Modeling
 
+Based on our technology review comparing **logistic regression in scikit-learn** and **XGBoost**, we selected logistic regression as it provided comparable (even slightly better) performance with much greater interpretability and simplicity. Because the project prioritizes explaining business survival risk to users, logistic regression allowed us to clearly interpret how features influence the probability of business closure while maintaining a stable and efficient model.
+
 The logistic modeling module estimates whether a business survives a fixed time horizon, defined in this project as **three-year survival**.
 
 Its workflow is:

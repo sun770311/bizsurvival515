@@ -555,7 +555,7 @@ with tv_tab:
             <div class="info-card">
                 <h4>What This Model Predicts</h4>
                 <p>
-                    The time-varying Cox model estimates a business's current relative closure risk at each time point using features that can change over time, such as complaints, active license count, categories, and location. Unlike the standard Cox model, it does not simulate future survival probability trajectories.
+                    The time-varying Cox model estimates a business's current relative closure risk at each time point using features that can change over time, such as complaints, active license count, categories, and location. We estimate current risk rather than projecting a full future survival trajectory.
                 </p>
             </div>
             """,

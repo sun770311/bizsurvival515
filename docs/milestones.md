@@ -6,6 +6,7 @@
    * Local pipeline scripting and model implementation
    * Refactoring modeling utilities and project structure
    * Unit testing
+   * Documentation and videos
 * Juan Pablo Reyes Martinez
    * CI integration
    * Pylint
@@ -139,10 +140,10 @@ Build an interactive web application that allows users to explore results.
 
 ---
 
-## Milestone 6 — Final Demo Preparation (Ongoing)
+## Milestone 6 — Final Demo Preparation
 ### Presentation day: March 16
 
-### Ongoing work
+### Completed Tasks
 * Prepare a video walkthrough demonstrating:
    * Data pipeline
    * Modeling approach

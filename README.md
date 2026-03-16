@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/sun770311/bizsurvival515/badge.svg)](https://coveralls.io/github/sun770311/bizsurvival515)
 
 
-## 🚀 Explore the Application! https://bizsurvival515.streamlit.app
+## 🚀 Explore the Application! https://nycbizsurvival.streamlit.app/
 
 # Overview
 
@@ -118,7 +118,7 @@ Run all tests using:
 python -m unittest discover -s bizsurvival515/tests -v
 ```
 
-# Future Work
+# Future Work in `databricks/`
 
 * Add scripting to automatically generate and export pipeline outputs as model artifacts used by the Streamlit application.
 
