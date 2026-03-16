@@ -6,6 +6,7 @@
    * Local pipeline scripting and model implementation
    * Refactoring modeling utilities and project structure
    * Unit testing
+   * Documentation and videos
 * Juan Pablo Reyes Martinez
    * CI integration
    * Pylint
