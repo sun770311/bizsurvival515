@@ -139,10 +139,10 @@ Build an interactive web application that allows users to explore results.
 
 ---
 
-## Milestone 6 — Final Demo Preparation (Ongoing)
+## Milestone 6 — Final Demo Preparation
 ### Presentation day: March 16
 
-### Ongoing work
+### Completed Tasks
 * Prepare a video walkthrough demonstrating:
    * Data pipeline
    * Modeling approach

@@ -1,5 +1,7 @@
 # How to Use the Streamlit Application
 
+Application Link: https://nycbizsurvival.streamlit.app/ 
+
 A step-by-step walkthrough of the NYC business survival interactive web application, designed to support entrepreneurs, NYC residents, economic researchers, and urban analysts in exploring business risk and neighborhood complaint patterns.
 
 # Table of Contents
